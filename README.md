@@ -111,7 +111,7 @@ Se o upload falhar na SuperMini: segure **BOOT**, toque em **RESET**, solte o
 | Botão centralizar | Traz o cursor para perto do centro da tela |
 | Botão velocidade | Percorre lento → médio → rápido |
 | 4 s parado | Estado ocioso, conexão mantida |
-| 2 min parado | Sono profundo |
+| 20 min parado | Sono profundo |
 | Mover o aparelho, ou botão esquerdo | Desperta |
 
 O *bonding* está habilitado: depois do primeiro pareamento o host reconecta

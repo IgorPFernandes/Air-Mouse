@@ -186,7 +186,7 @@ Deixe o conector USB do TP4056 acessível por uma abertura na caixa.
 - [ ] Centralizar leva o cursor para perto do meio da tela
 - [ ] As três cores de velocidade aparecem e apagam sozinhas
 - [ ] Reconecta sozinho ao ligar (bonding)
-- [ ] Fica ocioso após 4 s e dorme após 2 min
+- [ ] Fica ocioso após 4 s e dorme após 20 min
 - [ ] Acorda ao mover o aparelho, sem apertar nada
 - [ ] Células equalizadas antes de unir em paralelo
 - [ ] Carrega pelo TP4056 e a chave corta a alimentação

@@ -142,7 +142,15 @@
 #define CONN_TIMEOUT 600
 
 #define IDLE_ENTER_MS 4000UL
-#define IDLE_SLEEP_MS (120UL * 1000UL)
+
+// Vinte minutos ate o sono profundo, e nao dois. Sair do sono profundo custa
+// uma reconexao BLE de 1 a 2 s, o que no meio de uma aula aparece como um
+// aparelho que nao responde quando se aponta para a tela.
+//
+// O estado ocioso custa 2 mA: uma jornada inteira de 8 h sem dormir nenhuma vez
+// gasta 16 mAh, meio por cento de uma 18650. Nao vale trocar isso por latencia
+// na frente de uma turma. Ver docs/ENERGIA.md.
+#define IDLE_SLEEP_MS (20UL * 60UL * 1000UL)
 #define ADV_TIMEOUT_MS (180UL * 1000UL)
 
 // Intervalo de anuncio, em unidades de 0,625 ms.
