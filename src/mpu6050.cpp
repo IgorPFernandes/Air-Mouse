@@ -8,13 +8,19 @@ namespace {
 
 constexpr uint8_t kAddr = 0x68;
 
-constexpr uint8_t kRegSmplrtDiv   = 0x19;
-constexpr uint8_t kRegConfig      = 0x1A;
-constexpr uint8_t kRegGyroConfig  = 0x1B;
-constexpr uint8_t kRegAccelConfig = 0x1C;
-constexpr uint8_t kRegAccelXoutH  = 0x3B;
-constexpr uint8_t kRegPwrMgmt1    = 0x6B;
-constexpr uint8_t kRegWhoAmI      = 0x75;
+constexpr uint8_t kRegSmplrtDiv     = 0x19;
+constexpr uint8_t kRegConfig        = 0x1A;
+constexpr uint8_t kRegGyroConfig    = 0x1B;
+constexpr uint8_t kRegAccelConfig   = 0x1C;
+constexpr uint8_t kRegMotThr        = 0x1F;
+constexpr uint8_t kRegMotDur        = 0x20;
+constexpr uint8_t kRegIntPinCfg     = 0x37;
+constexpr uint8_t kRegIntEnable     = 0x38;
+constexpr uint8_t kRegAccelXoutH    = 0x3B;
+constexpr uint8_t kRegMotDetectCtrl = 0x69;
+constexpr uint8_t kRegPwrMgmt1      = 0x6B;
+constexpr uint8_t kRegPwrMgmt2      = 0x6C;
+constexpr uint8_t kRegWhoAmI        = 0x75;
 
 // Fundo de escala: giroscopio +-500 deg/s, acelerometro +-2 g.
 constexpr float kGyroLsbPerDps = 65.5f;
@@ -59,6 +65,19 @@ bool readRaw(ImuSample &out) {
   return true;
 }
 
+bool configureFullPower() {
+  if (!writeReg(kRegPwrMgmt1, 0x01)) return false;   // acorda, clock = PLL do eixo X
+  delay(20);
+
+  writeReg(kRegPwrMgmt2, 0x00);      // todos os eixos ativos
+  writeReg(kRegConfig, 0x03);        // DLPF ~44 Hz
+  writeReg(kRegSmplrtDiv, 0x04);     // 1 kHz / (4 + 1) = 200 Hz
+  writeReg(kRegGyroConfig, 0x08);    // +-500 deg/s
+  writeReg(kRegAccelConfig, 0x00);   // +-2 g, sem filtro passa-alta
+  delay(20);
+  return true;
+}
+
 }  // namespace
 
 namespace Mpu6050 {
@@ -70,14 +89,44 @@ bool begin() {
 
   if (!writeReg(kRegPwrMgmt1, 0x80)) return false;   // reset
   delay(100);
-  if (!writeReg(kRegPwrMgmt1, 0x01)) return false;   // acorda, clock = PLL do eixo X
-  delay(20);
 
-  writeReg(kRegConfig, 0x03);        // DLPF ~44 Hz
-  writeReg(kRegSmplrtDiv, 0x04);     // 1 kHz / (4 + 1) = 200 Hz
-  writeReg(kRegGyroConfig, 0x08);    // +-500 deg/s
-  writeReg(kRegAccelConfig, 0x00);   // +-2 g
-  delay(20);
+  return configureFullPower();
+}
+
+bool enterMotionDetect(uint8_t threshold) {
+  // Sequencia de wake-on-motion do MPU6050. A deteccao usa o filtro passa-alta
+  // do acelerometro, por isso o DHPF precisa sair de zero antes de armar a
+  // interrupcao.
+  if (!writeReg(kRegPwrMgmt1, 0x00)) return false;   // acorda, clock interno
+  writeReg(kRegPwrMgmt2, 0x00);
+  writeReg(kRegAccelConfig, 0x01);                   // +-2 g, DHPF 5 Hz
+
+  writeReg(kRegMotThr, threshold);
+  writeReg(kRegMotDur, 0x01);                        // 1 ms acima do limiar
+  writeReg(kRegMotDetectCtrl, 0x15);                 // atraso de ligacao do acelerometro
+
+  // INT ativo em nivel baixo e travado ate a leitura, para que o nivel se
+  // mantenha enquanto o ESP32 acorda do sono profundo.
+  writeReg(kRegIntPinCfg, 0xB0);
+  writeReg(kRegIntEnable, 0x40);                     // apenas MOT_EN
+
+  writeReg(kRegPwrMgmt2, 0x47);                      // ciclo a 5 Hz, giroscopio em espera
+  return writeReg(kRegPwrMgmt1, 0x28);               // CYCLE = 1, sensor de temperatura desligado
+}
+
+bool exitMotionDetect() {
+  writeReg(kRegIntEnable, 0x00);
+  if (!configureFullPower()) return false;
+
+  // O giroscopio leva cerca de 35 ms para estabilizar apos sair da espera;
+  // ler antes disso devolve lixo que entraria no filtro.
+  delay(50);
+
+  ImuSample discard;
+  for (uint8_t i = 0; i < 10; i++) {
+    readRaw(discard);
+    delay(2);
+  }
   return true;
 }
 

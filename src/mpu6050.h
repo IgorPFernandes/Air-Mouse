@@ -24,6 +24,15 @@ bool read(ImuSample &out);
 
 const GyroBias &bias();
 
+// Modo de baixo consumo: giroscopio em espera, acelerometro amostrando a 5 Hz
+// e o pino INT indo a nivel baixo quando a aceleracao passa do limiar
+// (unidades de 32 mg). Cerca de 20 uA contra os 3,9 mA do modo pleno.
+bool enterMotionDetect(uint8_t threshold);
+
+// Retorna ao modo pleno. O giroscopio leva cerca de 35 ms para estabilizar,
+// intervalo ja aguardado aqui; o bias medido na calibracao e preservado.
+bool exitMotionDetect();
+
 void sleep();
 
 }  // namespace Mpu6050
