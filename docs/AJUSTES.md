@@ -23,6 +23,32 @@ monitor serial.
 | Scroll rápido demais | Aumente `SCROLL_DIVISOR` |
 | Scroll no sentido errado | `SCROLL_INVERT 1` |
 | Cursor anda na diagonal com o aparelho inclinado | Confirme `ROLL_COMPENSATION 1` |
+| Centralizar não chega no centro | Confira `SCREEN_WIDTH` e `SCREEN_HEIGHT`; aumente `RECENTER_STEPS` |
+| Centralizar erra sempre para o mesmo lado | É a aceleração de ponteiro do sistema; no Windows, desmarque "aumentar a precisão do ponteiro" |
+| RGB com as cores trocadas | Confira a ordem dos pinos; um LED de cátodo comum precisa de `RGB_COMMON_ANODE 0` |
+| Cor da velocidade some rápido demais | Aumente `RGB_CONFIRM_MS` |
+
+---
+
+## Níveis de velocidade
+
+O botão de velocidade percorre três níveis, e a cor do RGB confirma qual está
+valendo por 1,5 s. O multiplicador incide sobre `SENSITIVITY` e `ACCEL_GAIN` ao
+mesmo tempo, então a curva mantém o formato e só muda de escala.
+
+```c
+#define SPEED_SLOW_SCALE   0.55f   // vermelho
+#define SPEED_MEDIUM_SCALE 1.00f   // amarelo — os valores abaixo como estão
+#define SPEED_FAST_SCALE   1.60f   // verde
+#define SPEED_DEFAULT      1       // 0 lento, 1 médio, 2 rápido
+```
+
+Ajuste primeiro os parâmetros base no nível médio, que é o de escala 1,0. Os
+outros dois são derivados dele — mexer na base move os três de uma vez, que é o
+comportamento desejado.
+
+O nível escolhido fica na RAM do RTC e sobrevive ao sono profundo, mas não a
+desligar a chave. `SPEED_DEFAULT` é o nível ao ligar do zero.
 
 ---
 

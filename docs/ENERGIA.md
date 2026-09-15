@@ -65,8 +65,16 @@ Uso realista — 2 h de movimento, 2 h de pausas curtas e 20 h guardado por dia:
 |---|---|---|
 | 400 mAh | ~2 dias | ~8 dias |
 | 1000 mAh | ~5 dias | ~20 dias |
+| 1 × 18650 (3400 mAh) | ~17 dias | ~66 dias |
+| 2 × 18650 (6800 mAh) | ~34 dias | ~133 dias |
 
 Cerca de 51 mAh por dia no perfil realista, contra cerca de 200 mAh antes.
+
+A partir de ~66 dias, o fator que decide a autonomia deixa de ser o firmware e
+passa a ser a **autodescarga** da célula: uma 18650 de lítio perde entre 2% e 5%
+ao mês parada. Em 133 dias isso já é da ordem de 10% a 20% da capacidade. Vale
+saber antes de pagar peso por capacidade que a química vai consumir sozinha —
+ver a discussão de peso em [HARDWARE.md](HARDWARE.md#o-peso--vale-conversar-antes-de-comprar).
 
 ---
 

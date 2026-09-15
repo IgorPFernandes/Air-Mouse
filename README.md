@@ -22,9 +22,11 @@ macOS, Linux, Android e iPadOS.
 - **Modo scroll** com o botão do meio segurado.
 - **Nível de bateria** reportado ao sistema operacional.
 - **Gestão de energia em três estados** — ativo, ocioso com a conexão mantida e
-  sono profundo. Cerca de 20 dias de autonomia em uso realista com uma célula de
-  1000 mAh; ver [ENERGIA.md](docs/ENERGIA.md).
+  sono profundo. Em uso realista, ~20 dias com uma LiPo de 1000 mAh e ~133 dias
+  com duas 18650 em paralelo; ver [ENERGIA.md](docs/ENERGIA.md).
 - **Despertar por movimento**: pegar o aparelho já o acorda, sem apertar nada.
+- **Botão de centralizar**, para reencontrar o cursor quando se perde de vista.
+- **Três níveis de velocidade** com confirmação por LED RGB.
 
 ---
 
@@ -39,8 +41,9 @@ macOS, Linux, Android e iPadOS.
 │   ├── pointer.{h,cpp}       tratamento de sinal do cursor
 │   ├── ble_mouse.{h,cpp}     perfil HID sobre BLE
 │   ├── button.{h,cpp}        debounce
+│   ├── recenter.{h,cpp}      centralizacao do cursor
 │   ├── battery.{h,cpp}       leitura do ADC e curva da célula
-│   ├── status_led.{h,cpp}    estado visual
+│   ├── rgb_led.{h,cpp}       LED RGB: status e velocidade
 │   └── power.{h,cpp}         clock, light sleep e sono profundo
 ├── tools/
 │   └── i2c_scanner/          diagnóstico do barramento I²C
@@ -105,6 +108,8 @@ Se o upload falhar na SuperMini: segure **BOOT**, toque em **RESET**, solte o
 | Botão esquerdo | Clique esquerdo |
 | Botão direito | Clique direito |
 | Botão do meio segurado + movimento | Rolagem |
+| Botão centralizar | Traz o cursor para perto do centro da tela |
+| Botão velocidade | Percorre lento → médio → rápido |
 | 4 s parado | Estado ocioso, conexão mantida |
 | 2 min parado | Sono profundo |
 | Mover o aparelho, ou botão esquerdo | Desperta |
@@ -112,12 +117,16 @@ Se o upload falhar na SuperMini: segure **BOOT**, toque em **RESET**, solte o
 O *bonding* está habilitado: depois do primeiro pareamento o host reconecta
 sozinho.
 
-| LED | Estado |
+| LED RGB | Estado |
 |---|---|
-| Aceso | Iniciando |
-| Piscada lenta | Anunciando, aguardando conexão |
-| Apagado | Conectado |
-| Piscada rápida | MPU6050 não respondeu |
+| Azul fixo | Iniciando |
+| Azul, piscada lenta | Anunciando, aguardando conexão |
+| Vermelho, piscada rápida | MPU6050 não respondeu |
+| Apagado | Conectado e em uso |
+| Verde / amarelo / vermelho por 1,5 s | Velocidade rápida / média / lenta |
+
+O LED não fica aceso mostrando a velocidade o tempo todo: um LED aceso consome
+mais que o aparelho inteiro em repouso. A cor aparece na troca e ao conectar.
 
 ---
 
