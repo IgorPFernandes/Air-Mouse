@@ -22,6 +22,17 @@ float g_scrollAccumulator = 0.0f;
 float g_rollDeg = 0.0f;
 float g_speedDps = 0.0f;
 
+Pointer::Speed g_speed = static_cast<Pointer::Speed>(SPEED_DEFAULT);
+float          g_speedScale = SPEED_MEDIUM_SCALE;
+
+float scaleFor(Pointer::Speed speed) {
+  switch (speed) {
+    case Pointer::Speed::kSlow: return SPEED_SLOW_SCALE;
+    case Pointer::Speed::kFast: return SPEED_FAST_SCALE;
+    default:                    return SPEED_MEDIUM_SCALE;
+  }
+}
+
 // Subtrai o limiar em vez de zerar. Zerar cria um degrau: o cursor salta de
 // parado para a velocidade cheia ao cruzar a borda da zona morta.
 float applyDeadzone(float v) {
@@ -31,10 +42,12 @@ float applyDeadzone(float v) {
 }
 
 // Termo linear para precisao no movimento lento, termo quadratico para
-// atravessar a tela sem girar o braco inteiro.
+// atravessar a tela sem girar o braco inteiro. O nivel de velocidade escala os
+// dois termos igualmente, de modo que so o tamanho do gesto muda.
 float applyAccelerationCurve(float v) {
   const float magnitude = fabsf(v);
-  const float result = magnitude * SENSITIVITY + magnitude * magnitude * ACCEL_GAIN;
+  const float result = (magnitude * SENSITIVITY + magnitude * magnitude * ACCEL_GAIN) *
+                       g_speedScale;
   return v < 0.0f ? -result : result;
 }
 
@@ -54,6 +67,27 @@ void reset() {
   g_scrollAccumulator = 0.0f;
   g_rollDeg = 0.0f;
   g_speedDps = 0.0f;
+}
+
+void setSpeed(Speed speed) {
+  g_speed = speed;
+  g_speedScale = scaleFor(speed);
+
+  // O residuo esta na escala antiga; mante-lo faria o cursor dar um tranco
+  // no primeiro quadro apos a troca.
+  g_residualX = g_residualY = 0.0f;
+}
+
+Speed speed() {
+  return g_speed;
+}
+
+Speed nextSpeed() {
+  switch (g_speed) {
+    case Speed::kSlow:   return Speed::kMedium;
+    case Speed::kMedium: return Speed::kFast;
+    default:             return Speed::kSlow;
+  }
 }
 
 PointerOutput update(const ImuSample &sample, float dt, bool scrollMode) {

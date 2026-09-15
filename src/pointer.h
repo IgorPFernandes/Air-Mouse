@@ -15,7 +15,21 @@ struct PointerOutput {
 // cada etapa e a ordem entre elas.
 namespace Pointer {
 
+enum class Speed : uint8_t {
+  kSlow = 0,
+  kMedium = 1,
+  kFast = 2,
+};
+
 void reset();
+
+// Escala SENSITIVITY e ACCEL_GAIN juntos, preservando o formato da curva.
+void setSpeed(Speed speed);
+
+Speed speed();
+
+// Proximo nivel do ciclo lento -> medio -> rapido -> lento.
+Speed nextSpeed();
 
 // scrollMode desvia o movimento vertical para a roda em vez do cursor.
 PointerOutput update(const ImuSample &sample, float dt, bool scrollMode);
