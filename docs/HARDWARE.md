@@ -242,18 +242,48 @@ dizem o contrário:
 | Botões, RGB, resistores, fios | ~8 g |
 | **Total** | **~160 g** |
 
-As células e o volume que elas obrigam são cerca de **90% do peso final**. Para
-comparação, um Wii Remote com pilhas pesa 145 g, e um mouse sem fio comum fica
-entre 80 e 100 g — mas o mouse comum descansa na mesa. Este fica no ar, sustentado
-pelo punho, o tempo todo que estiver em uso.
+As células e o volume que elas obrigam são cerca de **90% do peso final**.
+
+### Contra o que comparar
+
+A tentação é comparar com um mouse de mesa, que pesa 100 a 140 g. **É a
+comparação errada**: o mouse de mesa está apoiado na mesa, e a carga sustentada
+pela mão é essencialmente zero — vence-se apenas o atrito. Este aparelho fica no
+ar, e 100 g no ar se comparam a 0 g na mesa, não a 120 g na mesa.
+
+A classe certa é a dos objetos que fazem o mesmo trabalho na mesma postura:
+
+| Referência | Peso | Observação |
+|---|---|---|
+| Apresentador de slides comercial | 50 a 75 g | O objeto que este substitui |
+| Controle de TV | 100 a 150 g | Usado em rajadas curtas, braço apoiado |
+| Wii Remote com pilhas | 145 g | Fadiga documentada em sessões longas |
+
+### Onde a massa está importa mais que quanta ela é
+
+O gesto principal deste aparelho é girar o pulso, e o esforço para girar escala
+com massa × distância ao quadrado. Duas consequências práticas:
+
+- Com duas células, monte-as **lado a lado, nunca em fila**. Enfileiradas dão
+  130 mm de comprimento e mais que dobram o esforço de rotação em relação às
+  mesmas 160 g dispostas lado a lado em 65 mm.
+- Em qualquer configuração, concentre a massa o mais perto possível do punho.
+  Massa na ponta do aparelho é a pior posição possível para o gesto que este
+  projeto pede o tempo todo.
 
 E o retorno é menor do que parece, porque a autonomia já estava resolvida:
 
-| Bateria | Autonomia (uso realista) | Peso do conjunto |
+| Bateria | Jornadas de 8 h por carga | Peso do conjunto |
 |---|---|---|
-| LiPo 1000 mAh | ~20 dias | ~75 g |
-| 1 × 18650 (3400 mAh) | ~66 dias | ~115 g |
-| 2 × 18650 (6800 mAh) | ~133 dias | ~160 g |
+| LiPo 1000 mAh | ~31 | **~66 g** |
+| 1 × 18650 (3400 mAh) | ~106 | ~102 g |
+| 2 × 18650 (6800 mAh) | ~212 | ~160 g |
+
+(Jornadas em perfil de apresentação; ver [ENERGIA.md](ENERGIA.md#perfil-de-jornada-de-8-horas).)
+
+A LiPo de 1000 mAh entra na faixa de peso do apresentador comercial e ainda dá
+seis semanas entre cargas. Para uso de sala de aula, é a opção que mais se parece
+com o objeto que as pessoas já sabem segurar.
 
 A segunda célula troca **+45 g no punho por dois meses a mais entre cargas**,
 partindo de um aparelho que já ficava dois meses. Uma célula só usa exatamente a
