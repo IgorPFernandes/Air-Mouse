@@ -21,9 +21,9 @@ macOS, Linux, Android e iPadOS.
   sendo movido.
 - **Modo scroll** com o botão do meio segurado.
 - **Nível de bateria** reportado ao sistema operacional.
-- **Gestão de energia em três estados** — ativo, ocioso com a conexão mantida e
-  sono profundo. Em uso realista, ~20 dias com uma LiPo de 1000 mAh e ~133 dias
-  com duas 18650 em paralelo; ver [ENERGIA.md](docs/ENERGIA.md).
+- **Gestão de energia em três estados** — ativo (~22 mA), ocioso com a conexão
+  mantida (~1,9 mA) e sono profundo (~84 µA). Com duas 18650 em paralelo, cerca
+  de **7 meses** entre cargas em uso de apresentação; ver [Autonomia](#autonomia).
 - **Despertar por movimento**: pegar o aparelho já o acorda, sem apertar nada.
 - **Botão de centralizar**, para reencontrar o cursor quando se perde de vista.
 - **Três níveis de velocidade** com confirmação por LED RGB.
@@ -127,6 +127,143 @@ sozinho.
 
 O LED não fica aceso mostrando a velocidade o tempo todo: um LED aceso consome
 mais que o aparelho inteiro em repouso. A cor aparece na troca e ao conectar.
+
+---
+
+## Autonomia
+
+> Todos os valores vêm de folhas de dados dos componentes. **Nada foi medido.**
+> As correntes reais podem divergir; ver [como medir](docs/ENERGIA.md#medindo-de-verdade).
+
+### Passo 1 — Capacidade realmente disponível
+
+Partindo de duas células de 3400 mAh em paralelo:
+
+| Etapa | Cálculo | Resultado |
+|---|---:|---:|
+| Nominal | 3400 × 2 | 6800 mAh |
+| Término do TP4056 | −100 mAh | 6700 mAh |
+| Corte por subtensão do circuito | × 0,92 | **6164 mAh** |
+
+**O término do TP4056** custa pouco mesmo. Ele encerra quando a corrente cai a
+~1/10 da programada — 100 mA com o ajuste de 1 A. Num pacote de 6800 mAh isso é
+C/68, um ponto muito adiante na curva de tensão constante, então a célula termina
+quase cheia. A perda fica entre 1% e 2%.
+
+**O corte por subtensão é o fator que costuma passar despercebido.** A célula é
+especificada até 2,5 V, e a proteção do módulo só atua por volta de 2,4 V — mas o
+aparelho para de funcionar muito antes disso. O regulador de 3,3 V da placa perde
+a regulação quando a entrada cai abaixo de ~3,5 V, e o ESP32-C3 começa a sofrer
+brownout nos picos de transmissão do rádio.
+
+Na curva de descarga de uma célula de lítio, o trecho de 4,2 V até ~3,4 V
+concentra cerca de 92% da capacidade. Os 8% restantes existem na célula, mas
+ficam abaixo da tensão em que este circuito ainda funciona. **São ~536 mAh
+inacessíveis** — cinco vezes o que você descontou pelo TP4056.
+
+### Passo 2 — Consumo de cada componente
+
+#### Estado ativo — em movimento
+
+| Componente | Corrente | Origem |
+|---|---:|---|
+| ESP32-C3, CPU a 80 MHz | ~11 mA | Modem-sleep com CPU ativa |
+| Rádio BLE, intervalo 7,5 ms, latência 0 | ~7 mA | Média das janelas de RX/TX a 0 dBm |
+| MPU6050, giroscópio + acelerômetro a 200 Hz | 3,8 mA | Folha de dados |
+| Divisor de bateria (100 k + 100 k) | 0,019 mA | 3,8 V ÷ 200 kΩ |
+| Regulador da placa (ME6211) | 0,040 mA | Corrente de repouso |
+| LED RGB | 0 mA | Apagado quando conectado |
+| **Total** | **~22 mA** | |
+
+#### Estado ocioso — parado, conexão mantida
+
+| Componente | Corrente | Origem |
+|---|---:|---|
+| ESP32-C3, light sleep + despertar a 50 Hz | ~1,2 mA | Ciclo de trabalho da CPU |
+| Rádio BLE, slave latency 40 (~480 ms) | ~0,6 mA | Ciclo de trabalho de ~0,4% |
+| MPU6050 em detecção de movimento a 5 Hz | 0,020 mA | Folha de dados, só acelerômetro |
+| Divisor de bateria | 0,019 mA | |
+| Regulador da placa | 0,040 mA | |
+| **Total** | **~1,9 mA** | |
+
+#### Sono profundo
+
+| Componente | Corrente |
+|---|---:|
+| ESP32-C3 em sono profundo, despertar por GPIO | 0,005 mA |
+| MPU6050 em detecção de movimento | 0,020 mA |
+| Divisor de bateria | 0,019 mA |
+| Regulador da placa (ME6211) | 0,040 mA |
+| **Total** | **~0,084 mA** |
+
+Repare que **o ESP32 é o menor consumidor aqui**. O regulador da placa sozinho
+gasta oito vezes o que o microcontrolador gasta, e o divisor de bateria quatro
+vezes. É por isso que trocar de placa muda mais o sono profundo do que qualquer
+alteração de firmware.
+
+### Passo 3 — Consumo por jornada
+
+Perfil de apresentação: 8 h de expediente com ~10% do tempo em movimento.
+
+| Fase | Duração | Corrente | Consumo |
+|---|---:|---:|---:|
+| Ativo | 0,8 h | 22 mA | 17,6 mAh |
+| Ocioso | 7,2 h | 1,9 mA | 13,7 mAh |
+| Sono profundo | 16 h | 0,084 mA | 1,3 mAh |
+| **Total por jornada** | | | **32,6 mAh** |
+
+Fim de semana, 24 h dormindo: 2,0 mAh por dia.
+
+### Passo 4 — A autodescarga, que ninguém conta
+
+Uma célula de lítio perde de 2% a 5% da carga por mês, parada, sem estar ligada a
+nada. Adotando 3%:
+
+```
+6164 mAh × 3% = 185 mAh por mês = 42,6 mAh por semana
+```
+
+Numa semana de uso, isso é o seguinte:
+
+| Item | Por semana |
+|---|---:|
+| 5 jornadas × 32,6 mAh | 163 mAh |
+| 2 dias de fim de semana × 2,0 mAh | 4 mAh |
+| Autodescarga | 43 mAh |
+| **Total** | **210 mAh** |
+
+**A autodescarga responde por 20% do consumo total.** Ela não depende de uso — é
+a química da célula. É também a razão pela qual dobrar a capacidade rende menos
+que o dobro de autonomia: quanto maior o pacote, mais ele perde sozinho.
+
+### Resultado
+
+```
+6164 mAh ÷ 210 mAh por semana = 29 semanas
+```
+
+| Perfil de uso | Autonomia |
+|---|---|
+| Apresentação (~10% em movimento) | **~29 semanas** (~6,7 meses) |
+| Uso misto (~25% em movimento) | ~18 semanas (~4,2 meses) |
+| Uso intenso (~50% em movimento) | ~11 semanas (~2,5 meses) |
+| Movimento contínuo, sem pausas | **~277 horas** |
+
+### O que pode derrubar esses números
+
+| Fator | Efeito |
+|---|---|
+| **LED de alimentação da placa não removido** | 2 mA contínuos = 336 mAh/semana. Autonomia cai de 29 para **11 semanas** |
+| **Regulador AMS1117 em vez de ME6211** | 5 mA de repouso = 840 mAh/semana. Autonomia cai para **~4 semanas** |
+| **Células falsificadas** | Muita 18650 vendida como "3400 mAh" entrega 1500 a 2200 mAh reais. Divide tudo por dois |
+| Temperatura baixa | Capacidade cai; a 0 °C, espere 20 a 30% a menos |
+| Células desbalanceadas | 1 a 2% de perda |
+
+Os dois primeiros são de longe os mais importantes, e ambos são resolvidos na
+bancada, não no código: **desolde o LED de alimentação** e **confirme o CI
+regulador da placa** antes de acreditar em qualquer número acima.
+
+Discussão completa em [ENERGIA.md](docs/ENERGIA.md).
 
 ---
 

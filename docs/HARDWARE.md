@@ -318,8 +318,9 @@ Se o percentual sair pela metade ou dobrado, ajuste `BAT_DIVIDER_RATIO` — o va
 
 ## Consumo e autonomia
 
-Orçamento completo em [ENERGIA.md](ENERGIA.md): ~22 mA em uso, ~2 mA parado com
-a conexão mantida, e da ordem de 65 a 325 µA em sono profundo.
+Cálculo detalhado no [README](../README.md#autonomia): ~22 mA em uso, ~1,9 mA
+parado com a conexão mantida e ~84 µA em sono profundo — este último supondo
+regulador ME6211 e LED de alimentação removido.
 
 ### Duas modificações na placa que valem mais que o firmware
 
@@ -332,9 +333,10 @@ resistor em série.
 ~5 mA e o sono profundo deixa de significar qualquer coisa. ME6211 (~40 µA) e
 XC6206 (~1 µA) servem.
 
-Com 6800 mAh, um LED de 2 mA esquecido custa 48 mAh por dia e derruba os 133 dias
-para cerca de 70. Continua muito, mas é metade da autonomia jogada fora por um
-componente que não faz nada.
+Os números são brutais: um LED de 2 mA esquecido custa 336 mAh por semana e
+derruba a autonomia de **29 para 11 semanas**. Um regulador AMS1117 a 5 mA
+derruba para **4 semanas**. Nos dois casos, mais de dois terços da autonomia
+jogados fora por componentes que não fazem nada de útil aqui.
 
 ---
 

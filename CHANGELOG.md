@@ -54,8 +54,9 @@ Pipeline em `pointer.cpp`, nesta ordem (o porquê de cada etapa está em
 
 ### Firmware — energia
 
-Três estados: ativo (~22 mA), ocioso com conexão mantida (~2 mA, sai em ~50 ms) e
-sono profundo (~65 a 325 µA, sai em 1 a 2 s). Estimativas, não medições.
+Três estados: ativo (~22 mA), ocioso com conexão mantida (~1,9 mA, sai em ~50 ms)
+e sono profundo (~84 µA, sai em 1 a 2 s). Estimativas de folha de dados, não
+medições; composição peça por peça no [README](README.md#autonomia).
 
 - **Slave latency** alternando entre 0 (ativo) e 40 (ocioso). O rádio deixa de
   acordar a cada 7,5 ms sem perder a capacidade de responder no evento seguinte.

@@ -11,8 +11,13 @@
 | Estado | Quando | Consumo estimado | Custo para sair |
 |---|---|---|---|
 | **Ativo** | Em movimento ou com botão pressionado | ~22 mA | — |
-| **Ocioso** | 4 s parado, conexão mantida | ~2 mA | ~50 ms |
-| **Sono profundo** | 20 min parado | ~65 a 325 µA | 1 a 2 s (reconexão) |
+| **Ocioso** | 4 s parado, conexão mantida | ~1,9 mA | ~50 ms |
+| **Sono profundo** | 20 min parado | ~84 µA | 1 a 2 s (reconexão) |
+
+A composição de cada valor, peça por peça, está no
+[README](../README.md#passo-2--consumo-de-cada-componente). Os 84 µA supõem um
+regulador ME6211 na placa e o LED de alimentação removido; sem essas duas
+condições o número muda de ordem de grandeza.
 
 O estado **ocioso** é o que faz a diferença no uso real. Um mouse passa a maior
 parte do tempo parado entre um gesto e outro, e sair dele custa 50 ms — na
@@ -60,73 +65,31 @@ Para retomar o chaveamento, defina `BATTERY_GATED 1` e escolha um pino livre par
 
 ---
 
-## Autonomia estimada
+## Autonomia
 
-Uso contínuo, sem pausas:
+O cálculo detalhado, componente por componente, está no
+**[README](../README.md#autonomia)** — capacidade realmente disponível, consumo
+de cada peça em cada estado, consumo por jornada e autodescarga.
 
-| Bateria | Antes | Depois |
-|---|---|---|
-| 400 mAh | ~8 h | ~18 h |
-| 1000 mAh | ~20 h | ~45 h |
+Resumo, com duas 18650 em paralelo e perfil de apresentação: **~29 semanas**, ou
+cerca de sete meses entre cargas.
 
-Uso realista — 2 h de movimento, 2 h de pausas curtas e 20 h guardado por dia:
+Dois pontos que o cálculo deixa claros e que vale destacar aqui:
 
-| Bateria | Antes | Depois |
-|---|---|---|
-| 400 mAh | ~2 dias | ~8 dias |
-| 1000 mAh | ~5 dias | ~20 dias |
-| 1 × 18650 (3400 mAh) | ~17 dias | ~66 dias |
-| 2 × 18650 (6800 mAh) | ~34 dias | ~133 dias |
+**Nem toda a capacidade é acessível.** O aparelho para de funcionar quando a
+célula chega perto de 3,4 V, porque o regulador da placa perde a regulação e o
+ESP32-C3 sofre brownout nos picos do rádio. Os ~8% de capacidade que existem
+abaixo disso são inalcançáveis — cerca de 536 mAh num pacote de 6800 mAh.
 
-Cerca de 51 mAh por dia no perfil realista, contra cerca de 200 mAh antes.
-
-A partir de ~66 dias, o fator que decide a autonomia deixa de ser o firmware e
-passa a ser a **autodescarga** da célula: uma 18650 de lítio perde entre 2% e 5%
-ao mês parada. Em 133 dias isso já é da ordem de 10% a 20% da capacidade. Vale
-saber antes de pagar peso por capacidade que a química vai consumir sozinha —
-ver a discussão de peso em [HARDWARE.md](HARDWARE.md#o-peso--vale-conversar-antes-de-comprar).
+**A autodescarga responde por 20% do consumo.** Uma célula de lítio perde de 2% a
+5% ao mês parada, independentemente de uso. Em prazos de meses isso deixa de ser
+detalhe: é a razão de dobrar a capacidade render menos que o dobro de autonomia.
+Ver a discussão de peso em
+[HARDWARE.md](HARDWARE.md#o-peso--vale-conversar-antes-de-comprar).
 
 ---
 
-## Perfil de jornada de 8 horas
-
-O cenário que orientou os padrões atuais: um professor usando o aparelho durante
-um expediente e guardando-o no resto do dia.
-
-Oito horas de expediente **não são** oito horas de movimento. O firmware cai para
-o estado ocioso 4 s depois que o movimento para, e durante uma aula o aparelho
-passa a maior parte do tempo parado na mão de quem está falando.
-
-| Perfil da jornada | Tempo em movimento | Consumo no dia |
-|---|---|---|
-| Apresentação — trocar slide, apontar | ~10% | ~32 mAh |
-| Uso misto — mouse principal parte do dia | ~25% | ~56 mAh |
-| Uso intenso | ~50% | ~96 mAh |
-| Movimento ininterrupto (limite teórico) | 100% | ~176 mAh |
-
-Jornadas de 8 h por carga:
-
-| Bateria | Apresentação | Misto | Intenso | Ininterrupto |
-|---|---|---|---|---|
-| LiPo 1000 mAh | ~31 | ~18 | ~10 | ~6 |
-| 1 × 18650 (3400 mAh) | ~106 | ~61 | ~35 | ~19 |
-| 2 × 18650 (6800 mAh) | ~212 | ~121 | ~71 | ~38 |
-
-Em movimento contínuo, sem pausa nenhuma, uma 18650 dá **~154 horas** e duas dão
-**~309 horas**.
-
-### O que isso implica
-
-**Não se carrega este aparelho todo dia.** Uma jornada consome de 1% a 3% de uma
-18650. Com uma célula, a carga acontece a cada dois meses — o que torna irrelevante
-o tempo de carga longo discutido em [HARDWARE.md](HARDWARE.md#o-calor-que-é-o-limite-de-verdade):
-uma carga bimestral cabe num fim de semana.
-
-**Uma célula basta, e é a escolha melhor aqui.** A segunda leva a autonomia de
-dois para quatro meses, diferença sem efeito prático, ao custo de 45 g a mais no
-punho de quem segura o aparelho erguido durante aulas de 50 minutos.
-
-### Por que o sono profundo demora 20 minutos
+## Por que o sono profundo demora 20 minutos
 
 `IDLE_SLEEP_MS` é 20 min, não 2. Sair do sono profundo custa uma reconexão BLE de
 1 a 2 s, que no meio de uma aula aparece como um aparelho que não responde quando
