@@ -9,7 +9,8 @@
 #include "mpu6050.h"
 #include "pointer.h"
 #include "power.h"
-#include "status_led.h"
+#include "recenter.h"
+#include "rgb_led.h"
 
 namespace {
 
@@ -22,10 +23,19 @@ enum class Mode { kActive, kIdle };
 Button g_left(PIN_BTN_LEFT);
 Button g_right(PIN_BTN_RIGHT);
 Button g_middle(PIN_BTN_MID);
+Button g_center(PIN_BTN_CENTER);
+Button g_speed(PIN_BTN_SPEED);
+
+// Sobrevive ao sono profundo, que apaga a RAM comum mas preserva a do RTC.
+// Assim o nivel de velocidade escolhido continua valendo ao acordar.
+RTC_DATA_ATTR uint8_t g_savedSpeed = SPEED_DEFAULT;
 
 Mode     g_mode = Mode::kActive;
 bool     g_sensorReady = false;
 bool     g_advSlowed = false;
+bool     g_wasConnected = false;
+bool     g_centerWasPressed = false;
+bool     g_speedWasPressed = false;
 uint32_t g_lastFrameUs = 0;
 uint32_t g_lastActivityMs = 0;
 uint32_t g_lastBatteryMs = 0;
@@ -37,8 +47,25 @@ uint8_t  g_lastButtons = 0;
 #define LOG(...) ((void)0)
 #endif
 
+RgbLed::Color speedColor(Pointer::Speed speed) {
+  switch (speed) {
+    case Pointer::Speed::kFast: return RgbLed::Color::kGreen;
+    case Pointer::Speed::kSlow: return RgbLed::Color::kRed;
+    default:                    return RgbLed::Color::kYellow;
+  }
+}
+
+const char *speedName(Pointer::Speed speed) {
+  switch (speed) {
+    case Pointer::Speed::kFast: return "rapido (verde)";
+    case Pointer::Speed::kSlow: return "lento (vermelho)";
+    default:                    return "medio (amarelo)";
+  }
+}
+
 bool anyButtonPressed() {
-  return g_left.pressed() || g_right.pressed() || g_middle.pressed();
+  return g_left.pressed() || g_right.pressed() || g_middle.pressed() ||
+         g_center.pressed() || g_speed.pressed();
 }
 
 void startSensor() {
@@ -46,7 +73,7 @@ void startSensor() {
 
   if (!Mpu6050::begin()) {
     g_sensorReady = false;
-    StatusLed::set(StatusLed::State::kSensorError);
+    RgbLed::setState(RgbLed::State::kSensorError);
     LOG("MPU6050 nao respondeu. Verifique SDA, SCL, 3V3 e GND.\n");
     return;
   }
@@ -111,6 +138,22 @@ bool motionDetected() {
 #endif
 }
 
+// Borda de subida: age no instante do aperto, nao enquanto segurado.
+bool justPressed(const Button &button, bool &previous) {
+  const bool now = button.pressed();
+  const bool edge = now && !previous;
+  previous = now;
+  return edge;
+}
+
+void cycleSpeed() {
+  const Pointer::Speed next = Pointer::nextSpeed();
+  Pointer::setSpeed(next);
+  g_savedSpeed = static_cast<uint8_t>(next);
+  RgbLed::flash(speedColor(next));
+  LOG("Velocidade: %s\n", speedName(next));
+}
+
 void refreshBattery() {
   if (millis() - g_lastBatteryMs < BATTERY_UPDATE_MS) return;
   g_lastBatteryMs = millis();
@@ -137,13 +180,15 @@ void setup() {
 
   Power::begin();
 
-  StatusLed::begin();
-  StatusLed::set(StatusLed::State::kBooting);
-  StatusLed::update();
+  RgbLed::begin();
+  RgbLed::setState(RgbLed::State::kBooting);
+  RgbLed::update();
 
   g_left.begin();
   g_right.begin();
   g_middle.begin();
+  g_center.begin();
+  g_speed.begin();
 
 #if WAKE_ON_MOTION_ENABLED
   pinMode(PIN_MPU_INT, INPUT_PULLUP);
@@ -151,11 +196,15 @@ void setup() {
 
   Battery::begin();
   Pointer::reset();
+
+  if (g_savedSpeed > 2) g_savedSpeed = SPEED_DEFAULT;
+  Pointer::setSpeed(static_cast<Pointer::Speed>(g_savedSpeed));
+
   startSensor();
 
   BleMouse::begin(DEVICE_NAME, DEVICE_MANUFACTURER);
 
-  if (g_sensorReady) StatusLed::set(StatusLed::State::kAdvertising);
+  if (g_sensorReady) RgbLed::setState(RgbLed::State::kAdvertising);
 
   g_mode = Mode::kActive;
   g_lastFrameUs = micros();
@@ -164,25 +213,36 @@ void setup() {
 
   LOG("Anunciando como \"%s\". CPU %d MHz, light sleep %s, TX %d dBm.\n", DEVICE_NAME,
       CPU_FREQ_MHZ, Power::lightSleepActive() ? "ativo" : "indisponivel", BLE_TX_POWER_DBM);
+  LOG("Velocidade: %s\n", speedName(Pointer::speed()));
 
   if (Power::wokeFromMotion()) LOG("Despertou por movimento.\n");
 }
 
 void loop() {
-  StatusLed::update();
+  RgbLed::update();
 
   g_left.update();
   g_right.update();
   g_middle.update();
+  g_center.update();
+  g_speed.update();
+
+  const bool connected = BleMouse::connected();
 
   if (g_sensorReady) {
-    StatusLed::set(BleMouse::connected() ? StatusLed::State::kConnected
-                                         : StatusLed::State::kAdvertising);
+    RgbLed::setState(connected ? RgbLed::State::kConnected : RgbLed::State::kAdvertising);
   }
+
+  // Ao conectar, mostra em que velocidade o aparelho esta - a escolha
+  // sobreviveu ao sono profundo e o usuario pode nao lembrar dela.
+  if (connected && !g_wasConnected) {
+    RgbLed::flash(speedColor(Pointer::speed()));
+  }
+  g_wasConnected = connected;
 
   // Sem ninguem conectado, o anuncio rapido so vale durante a janela em que se
   // espera alguem procurando; depois dela o custo nao se paga.
-  if (!BleMouse::connected()) {
+  if (!connected) {
     if (!g_advSlowed && BleMouse::millisSinceConnected() > ADV_FAST_MS) {
       BleMouse::slowDownAdvertising();
       g_advSlowed = true;
@@ -209,6 +269,30 @@ void loop() {
 
   const float dt = (nowUs - g_lastFrameUs) / 1000000.0f;
   g_lastFrameUs = nowUs;
+
+  // Os botoes de velocidade e centralizacao funcionam em qualquer estado.
+  if (justPressed(g_speed, g_speedWasPressed)) {
+    g_lastActivityMs = millis();
+    cycleSpeed();
+  }
+
+  if (justPressed(g_center, g_centerWasPressed)) {
+    g_lastActivityMs = millis();
+    if (g_mode == Mode::kIdle) enterActive();
+    Recenter::start();
+    LOG("Centralizando.\n");
+  }
+
+  // Enquanto a sequencia roda, o giroscopio e ignorado: misturar o movimento
+  // da mao com a caminhada ate o centro erraria o alvo.
+  if (Recenter::running()) {
+    if (!connected) {
+      Recenter::cancel();
+    } else {
+      Recenter::update();
+      return;
+    }
+  }
 
   if (!g_sensorReady) return;
 

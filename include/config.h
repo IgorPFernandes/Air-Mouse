@@ -12,40 +12,50 @@
 // ---------------------------------------------------------------------------
 // Pinos (ESP32-C3)
 //
-// GPIO 2, 8 e 9 sao pinos de strapping e GPIO 18 e 19 sao o USB nativo; por
-// isso ficam fora, com excecao do GPIO 8, usado so como saida para o LED.
+// A SuperMini expoe GPIO 0 a 10, 20 e 21: treze pinos, doze deles usados aqui.
+// GPIO 2 e o unico que sobra, deixado livre de proposito por ser pino de
+// strapping - se estiver em nivel baixo no reset, a placa nao arranca.
+//
+// GPIO 20 e 21 sao a UART0, livres porque a serial usa o USB nativo.
+// GPIO 9 e o pino BOOT: segura-lo durante o reset entra em modo de gravacao,
+// o que e inofensivo mas confunde quem nao espera.
 //
 // PIN_BTN_LEFT e PIN_MPU_INT precisam estar entre GPIO 0 e 5: e a unica faixa
 // que acorda o ESP32-C3 do sono profundo. Verificado em power.cpp.
 // ---------------------------------------------------------------------------
-#define PIN_SDA        5
-#define PIN_SCL        6
+#define PIN_SDA         5
+#define PIN_SCL         6
 
-#define PIN_BTN_LEFT   3
-#define PIN_BTN_RIGHT  4
-#define PIN_BTN_MID   10
+#define PIN_BTN_LEFT    3
+#define PIN_BTN_RIGHT   4
+#define PIN_BTN_MID    10
+#define PIN_BTN_CENTER  7   // centraliza o cursor na tela
+#define PIN_BTN_SPEED   9   // percorre lento -> medio -> rapido
 
-#define PIN_MPU_INT    0   // INT do MPU6050, desperta por movimento
-#define PIN_BAT_ADC    1
-#define PIN_BAT_GND    7   // terra chaveado do divisor, ver BATTERY_GATED
-#define PIN_LED        8
-#define LED_ACTIVE_LOW 1
+#define PIN_MPU_INT     0   // INT do MPU6050, desperta por movimento
+#define PIN_BAT_ADC     1
+
+// LED RGB de anodo comum: cada catodo vai ao GPIO por um resistor de 220 ohm
+// e o anodo comum ao 3V3. Anodo comum de proposito - os pinos ficam em nivel
+// alto em repouso, o que mantem GPIO 8 seguro como pino de strapping.
+#define PIN_RGB_R       8
+#define PIN_RGB_G      20
+#define PIN_RGB_B      21
+#define RGB_COMMON_ANODE 1
 
 // ---------------------------------------------------------------------------
 // Bateria
 // ---------------------------------------------------------------------------
-// Desligue se o divisor resistivo nao estiver montado: o firmware passa a
-// reportar 100% em vez de ler o ADC.
 #define BATTERY_SENSE_ENABLED 1
 
 // (R1 + R2) / R2. Com dois resistores de 100 k, o valor e 2.0.
 #define BAT_DIVIDER_RATIO 2.0f
 
-// Com 1, o pe do divisor vai para PIN_BAT_GND em vez do terra, e o pino so vai
-// a nivel baixo durante a medicao. Um divisor de 100 k + 100 k ligado
-// permanentemente drena cerca de 20 uA, o que sozinho superaria o consumo do
-// aparelho dormindo. Com 0, ligue o divisor direto no GND.
-#define BATTERY_GATED 1
+// O pe do divisor ligado direto ao GND drena cerca de 20 uA continuos. Com uma
+// celula pequena isso pesava; com 18650 em paralelo sao 0,3% da capacidade em
+// um ano, e o GPIO que fazia o chaveamento vale mais como botao. Para voltar a
+// chavear, defina 1 e escolha um pino livre para PIN_BAT_GND.
+#define BATTERY_GATED 0
 
 #define BATTERY_UPDATE_MS 120000UL
 
@@ -75,9 +85,31 @@
 #define SCROLL_INVERT     0
 
 // ---------------------------------------------------------------------------
-// Botoes
+// Niveis de velocidade
+//
+// O botao de velocidade percorre os tres. O multiplicador incide sobre
+// SENSITIVITY e ACCEL_GAIN ao mesmo tempo, para que a curva mantenha o mesmo
+// formato e so mude de escala.
 // ---------------------------------------------------------------------------
-#define DEBOUNCE_MS 25
+#define SPEED_SLOW_SCALE   0.55f   // vermelho
+#define SPEED_MEDIUM_SCALE 1.00f   // amarelo, os valores acima como estao
+#define SPEED_FAST_SCALE   1.60f   // verde
+
+#define SPEED_DEFAULT 1            // 0 lento, 1 medio, 2 rapido
+
+// ---------------------------------------------------------------------------
+// Centralizacao do cursor
+//
+// O HID reporta deslocamento relativo, entao nao existe "ir para a posicao X".
+// O firmware encosta o cursor no canto superior esquerdo, onde o sistema o
+// prende, e de la caminha meia tela. Precisa saber o tamanho da tela.
+// ---------------------------------------------------------------------------
+#define SCREEN_WIDTH   1920
+#define SCREEN_HEIGHT  1080
+
+// Passos em que a caminhada ate o centro e dividida. Muitos passos pequenos
+// sofrem menos com a aceleracao de ponteiro do sistema do que um salto unico.
+#define RECENTER_STEPS 24
 
 // ---------------------------------------------------------------------------
 // Energia
@@ -95,8 +127,6 @@
 #define LIGHT_SLEEP_ENABLED 1
 
 // Potencia de transmissao, em dBm: -12, -9, -6, -3, 0, 3, 6 ou 9.
-// Para uso em mesa, 0 dBm cobre a sala inteira. Cada degrau acima custa
-// corrente nas rajadas de transmissao sem ganho pratico de alcance.
 #define BLE_TX_POWER_DBM 0
 
 // Intervalo de conexao, em unidades de 1,25 ms.
@@ -104,49 +134,39 @@
 #define CONN_INTERVAL_MAX 12   // 15 ms
 
 // Slave latency: quantos eventos de conexao o periferico pode ignorar quando
-// nao tem nada a enviar. E o maior ganho de energia do projeto com a conexao
-// ativa, porque o radio deixa de acordar a cada 7,5 ms sem deixar de responder
-// imediatamente quando ha movimento.
+// nao tem nada a enviar.
 #define CONN_LATENCY_ACTIVE 0
 #define CONN_LATENCY_IDLE   40   // ~480 ms efetivos entre despertares
 
-// Supervision timeout, em unidades de 10 ms. Precisa ser maior que
-// intervalo * (latency + 1); 6 s da folga confortavel.
+// Supervision timeout, em unidades de 10 ms.
 #define CONN_TIMEOUT 600
 
-// Tempo parado ate reduzir cadencia, subir a latencia e por o giroscopio em
-// espera. Sair desse estado custa cerca de 50 ms e nao derruba a conexao.
 #define IDLE_ENTER_MS 4000UL
-
-// Tempo parado ate o sono profundo. Sair custa uma reconexao BLE (1 a 2 s).
 #define IDLE_SLEEP_MS (120UL * 1000UL)
-
-// Tempo anunciando sem ninguem conectar ate dormir.
 #define ADV_TIMEOUT_MS (180UL * 1000UL)
 
 // Intervalo de anuncio, em unidades de 0,625 ms.
-#define ADV_INTERVAL_FAST 32     // 20 ms, nos primeiros ADV_FAST_MS
-#define ADV_INTERVAL_SLOW 1600   // 1 s, depois disso
+#define ADV_INTERVAL_FAST 32     // 20 ms
+#define ADV_INTERVAL_SLOW 1600   // 1 s
 #define ADV_FAST_MS 30000UL
 
-// Velocidade angular acima da qual o aparelho e considerado em uso.
 #define IDLE_MOTION_DPS 6.0f
 
-// Despertar por movimento: o MPU6050 fica em modo de baixo consumo, so com o
-// acelerometro, e puxa PIN_MPU_INT a nivel baixo ao detectar movimento.
-// Exige o pino INT do modulo ligado. Com 0, so o botao desperta.
 #define WAKE_ON_MOTION_ENABLED 1
-
-// Limiar de movimento, em unidades de 32 mg. 2 = 64 mg, sensivel o bastante
-// para reagir ao aparelho ser pego e alto o bastante para ignorar vibracao
-// de mesa.
 #define WAKE_ON_MOTION_THRESHOLD 2
+
+// Um LED aceso o tempo todo consome de 2 a 5 mA, mais que o aparelho inteiro
+// em repouso. A cor da velocidade aparece so por este tempo apos uma troca ou
+// apos conectar, e depois apaga.
+#define RGB_CONFIRM_MS 1500
+
+// ---------------------------------------------------------------------------
+// Botoes
+// ---------------------------------------------------------------------------
+#define DEBOUNCE_MS 25
 
 // ---------------------------------------------------------------------------
 // Depuracao
-//
-// A serial USB mantem o CDC ativo e custa corrente. Desligue para medir
-// consumo de verdade ou para uso normal com bateria.
 // ---------------------------------------------------------------------------
 #define DEBUG_SERIAL  1
 #define DEBUG_PLOT_MS 0   // > 0 imprime dx, dy e bateria a cada N ms
