@@ -132,9 +132,30 @@ mais que o aparelho inteiro em repouso. A cor aparece na troca e ao conectar.
 
 ## Estado do projeto
 
-O firmware está completo, mas **ainda não foi compilado nem validado em
-hardware**. A primeira compilação é o próximo passo. Relatos de erro de
-compilação ou de comportamento são bem-vindos via issue.
+O firmware está completo e documentado, mas **nunca foi compilado nem executado
+em hardware**. A primeira compilação é o próximo passo.
+
+Esta tabela existe para quem for montar: ela diz onde procurar primeiro quando
+algo não funcionar.
+
+| Subsistema | Estado | Risco |
+|---|---|---|
+| Driver do MPU6050 | Escrito | Baixo — registradores padrão, amplamente documentados |
+| Pipeline do cursor | Escrito, matemática simulada | Baixo — a simulação confere as contas |
+| HID BLE | Escrito, API conferida nos headers do NimBLE 1.4.3 | Médio — descritor e serviços não exercitados |
+| Botões e debounce | Escrito | Baixo |
+| Centralização do cursor | Escrito | Médio — depende da aceleração de ponteiro do sistema |
+| Níveis de velocidade e RGB | Escrito | Baixo |
+| Slave latency e parâmetros de conexão | Escrito | Médio — negociação pode ser recusada pelo host |
+| Light sleep automático | Escrito, com detecção de ausência de suporte | Médio — depende do core ter power management |
+| **Wake-on-motion do MPU6050** | **Escrito a partir da documentação** | **Alto — sequência de registradores não verificada** |
+| Consumo e autonomia | Estimado por folha de dados | **Alto — nenhuma medição feita** |
+
+Se algo falhar na bancada, comece pelas duas últimas linhas.
+
+Histórico completo do que foi construído em [CHANGELOG.md](CHANGELOG.md).
+
+Relatos de erro de compilação ou de comportamento são bem-vindos via issue.
 
 ---
 
