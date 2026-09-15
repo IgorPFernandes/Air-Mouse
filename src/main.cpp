@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <math.h>
 
 #include "battery.h"
 #include "ble_mouse.h"
@@ -12,11 +13,19 @@
 
 namespace {
 
+// ATIVO: giroscopio a taxa cheia, cadencia de REPORT_HZ_ACTIVE e slave latency
+// zero. OCIOSO: giroscopio em espera, sensor so no acelerometro a 5 Hz, slave
+// latency alta e conexao mantida; sair custa ~50 ms. O sono profundo e tratado
+// por Power::deepSleep().
+enum class Mode { kActive, kIdle };
+
 Button g_left(PIN_BTN_LEFT);
 Button g_right(PIN_BTN_RIGHT);
 Button g_middle(PIN_BTN_MID);
 
+Mode     g_mode = Mode::kActive;
 bool     g_sensorReady = false;
+bool     g_advSlowed = false;
 uint32_t g_lastFrameUs = 0;
 uint32_t g_lastActivityMs = 0;
 uint32_t g_lastBatteryMs = 0;
@@ -27,6 +36,10 @@ uint8_t  g_lastButtons = 0;
 #else
 #define LOG(...) ((void)0)
 #endif
+
+bool anyButtonPressed() {
+  return g_left.pressed() || g_right.pressed() || g_middle.pressed();
+}
 
 void startSensor() {
   Wire.begin(PIN_SDA, PIN_SCL, 400000);
@@ -55,21 +68,63 @@ void startSensor() {
   g_sensorReady = true;
 }
 
-uint8_t readButtons() {
-  uint8_t buttons = 0;
-  if (g_left.pressed()) buttons |= BleMouse::kButtonLeft;
-  if (g_right.pressed()) buttons |= BleMouse::kButtonRight;
-  return buttons;
+void enterIdle() {
+  if (g_mode == Mode::kIdle) return;
+  g_mode = Mode::kIdle;
+
+  BleMouse::setLowLatency(false);
+  Pointer::reset();
+
+#if WAKE_ON_MOTION_ENABLED
+  // O giroscopio sozinho custa 3,9 mA, mais que o ESP32 ocioso. Em repouso ele
+  // sai de cena e o acelerometro assume a deteccao de movimento.
+  if (g_sensorReady) Mpu6050::enterMotionDetect(WAKE_ON_MOTION_THRESHOLD);
+#endif
+
+  LOG("Ocioso.\n");
 }
 
-bool isIdle() {
-  return millis() - g_lastActivityMs > IDLE_SLEEP_MS;
+void enterActive() {
+  if (g_mode == Mode::kActive) return;
+  g_mode = Mode::kActive;
+
+#if WAKE_ON_MOTION_ENABLED
+  if (g_sensorReady) Mpu6050::exitMotionDetect();
+#endif
+
+  Pointer::reset();
+  BleMouse::setLowLatency(true);
+  g_lastFrameUs = micros();
+
+  LOG("Ativo.\n");
+}
+
+// Em repouso o giroscopio esta desligado, entao quem sinaliza movimento e o
+// pino INT do sensor.
+bool motionDetected() {
+#if WAKE_ON_MOTION_ENABLED
+  return digitalRead(PIN_MPU_INT) == LOW;
+#else
+  ImuSample sample;
+  if (!Mpu6050::read(sample)) return false;
+  return fabsf(sample.gy) > IDLE_MOTION_DPS || fabsf(sample.gz) > IDLE_MOTION_DPS;
+#endif
 }
 
 void refreshBattery() {
   if (millis() - g_lastBatteryMs < BATTERY_UPDATE_MS) return;
   g_lastBatteryMs = millis();
   BleMouse::setBatteryLevel(Battery::percent());
+}
+
+// Cede a CPU ate o proximo quadro. Diferente de um laco de espera, isto deixa
+// o FreeRTOS entrar em light sleep no intervalo.
+void waitForNextFrame(uint32_t periodUs) {
+  const uint32_t elapsedUs = micros() - g_lastFrameUs;
+  if (elapsedUs >= periodUs) return;
+
+  const uint32_t remainingMs = (periodUs - elapsedUs) / 1000;
+  if (remainingMs > 0) delay(remainingMs);
 }
 
 }  // namespace
@@ -80,6 +135,8 @@ void setup() {
   delay(300);
 #endif
 
+  Power::begin();
+
   StatusLed::begin();
   StatusLed::set(StatusLed::State::kBooting);
   StatusLed::update();
@@ -87,6 +144,10 @@ void setup() {
   g_left.begin();
   g_right.begin();
   g_middle.begin();
+
+#if WAKE_ON_MOTION_ENABLED
+  pinMode(PIN_MPU_INT, INPUT_PULLUP);
+#endif
 
   Battery::begin();
   Pointer::reset();
@@ -96,11 +157,15 @@ void setup() {
 
   if (g_sensorReady) StatusLed::set(StatusLed::State::kAdvertising);
 
+  g_mode = Mode::kActive;
   g_lastFrameUs = micros();
   g_lastActivityMs = millis();
   g_lastBatteryMs = millis();
 
-  LOG("Anunciando como \"%s\".\n", DEVICE_NAME);
+  LOG("Anunciando como \"%s\". CPU %d MHz, light sleep %s, TX %d dBm.\n", DEVICE_NAME,
+      CPU_FREQ_MHZ, Power::lightSleepActive() ? "ativo" : "indisponivel", BLE_TX_POWER_DBM);
+
+  if (Power::wokeFromMotion()) LOG("Despertou por movimento.\n");
 }
 
 void loop() {
@@ -115,22 +180,70 @@ void loop() {
                                          : StatusLed::State::kAdvertising);
   }
 
-  // Cadencia fixa: um dt constante mantem o filtro e a curva de aceleracao
-  // previsiveis, independente do tempo gasto no radio.
-  const uint32_t periodUs = 1000000UL / REPORT_HZ;
+  // Sem ninguem conectado, o anuncio rapido so vale durante a janela em que se
+  // espera alguem procurando; depois dela o custo nao se paga.
+  if (!BleMouse::connected()) {
+    if (!g_advSlowed && BleMouse::millisSinceConnected() > ADV_FAST_MS) {
+      BleMouse::slowDownAdvertising();
+      g_advSlowed = true;
+      LOG("Anuncio lento.\n");
+    }
+    if (BleMouse::millisSinceConnected() > ADV_TIMEOUT_MS) {
+      LOG("Ninguem conectou, dormindo.\n");
+#if DEBUG_SERIAL
+      Serial.flush();
+#endif
+      Power::deepSleep();
+    }
+  } else {
+    g_advSlowed = false;
+  }
+
+  const uint32_t periodUs =
+      1000000UL / (g_mode == Mode::kActive ? REPORT_HZ_ACTIVE : REPORT_HZ_IDLE);
+
+  waitForNextFrame(periodUs);
+
   const uint32_t nowUs = micros();
   if (nowUs - g_lastFrameUs < periodUs) return;
 
   const float dt = (nowUs - g_lastFrameUs) / 1000000.0f;
   g_lastFrameUs = nowUs;
 
-  ImuSample sample;
-  if (!g_sensorReady || !Mpu6050::read(sample)) return;
+  if (!g_sensorReady) return;
 
-  const uint8_t buttons = readButtons();
+  const uint8_t buttons =
+      (g_left.pressed() ? BleMouse::kButtonLeft : 0) |
+      (g_right.pressed() ? BleMouse::kButtonRight : 0);
+
+  if (g_mode == Mode::kIdle) {
+    if (motionDetected() || anyButtonPressed()) {
+      g_lastActivityMs = millis();
+      enterActive();
+    } else {
+      // Os botoes continuam sendo atendidos, so que na cadencia reduzida.
+      if (buttons != g_lastButtons) {
+        BleMouse::sendReport(buttons, 0, 0, 0, 0);
+        g_lastButtons = buttons;
+      }
+      refreshBattery();
+      if (millis() - g_lastActivityMs > IDLE_SLEEP_MS) {
+        LOG("Inatividade prolongada, sono profundo.\n");
+#if DEBUG_SERIAL
+        Serial.flush();
+#endif
+        Power::deepSleep();
+      }
+    }
+    return;
+  }
+
+  ImuSample sample;
+  if (!Mpu6050::read(sample)) return;
+
   const PointerOutput motion = Pointer::update(sample, dt, g_middle.pressed());
 
-  if (Pointer::speedDps() > IDLE_MOTION_DPS || buttons != 0 || g_middle.pressed()) {
+  if (Pointer::speedDps() > IDLE_MOTION_DPS || anyButtonPressed()) {
     g_lastActivityMs = millis();
   }
 
@@ -151,11 +264,7 @@ void loop() {
 
   refreshBattery();
 
-  if (isIdle()) {
-    LOG("Inatividade, entrando em sono profundo.\n");
-#if DEBUG_SERIAL
-    Serial.flush();
-#endif
-    Power::deepSleepUntilWakeButton();
+  if (millis() - g_lastActivityMs > IDLE_ENTER_MS) {
+    enterIdle();
   }
 }
