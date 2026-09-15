@@ -133,8 +133,13 @@ Uma célula só usa exatamente a mesma ligação — é só omitir a segunda.
 Plugue o USB **no TP4056**, não no ESP32. LED vermelho = carregando, azul (ou
 verde, depende do módulo) = cheio.
 
-Com 6800 mAh e o TP4056 a 1 A, a carga completa leva de 9 a 10 horas. Pode deixar
-a chave ligada e usar enquanto carrega, mas o mais seguro é desligar.
+Com 6800 mAh, a carga completa leva de 12 a 15 horas — o TP4056 é linear e entra
+em limitação térmica antes de sustentar 1 A. Ele **conclui** a carga, porque
+encerra por corrente e não por tempo; só demora. Ver
+[HARDWARE.md](HARDWARE.md#o-calor-que-é-o-limite-de-verdade).
+
+O módulo fica quente durante horas. Não carregue com ele enfiado na caixa
+fechada, e prefira a chave desligada durante a carga.
 
 ---
 

@@ -168,17 +168,45 @@ mais rápido nem mais forte; ele dobra o tempo entre cargas, e só.
 Vale ter isso claro antes de decidir, porque o peso extra está comprando dias de
 autonomia, não desempenho.
 
-### Efeitos sobre a carga
+### O pacote carrega completamente?
 
-A corrente do TP4056 se divide entre as células: 1 A em duas 18650 dá 0,5 A por
-célula, cerca de 0,15C. É uma carga mansa, boa para a vida útil — carregar uma
-célula sozinha a 1 A é mais agressivo.
+Sim, e por dois motivos que vale conhecer.
 
-Em compensação, 6800 mAh a 1 A leva de **9 a 10 horas** contando a fase de tensão
-constante. O TP4056 não tem temporizador de segurança que atrapalhe cargas longas
-(ele encerra quando a corrente cai a cerca de 1/10 da programada), mas o CI
-esquenta e entra em limitação térmica, o que estica mais o processo. Se incomodar,
-o **TP5100** faz 2 A e corta esse tempo pela metade.
+**Não há temporizador de segurança.** O TP4056 encerra por corrente, não por
+tempo: termina quando a corrente cai a cerca de 1/10 da programada, durante a
+fase de tensão constante. Uma carga de treze horas não é interrompida por nada.
+Carregadores com temporizador de 6 a 8 h cortariam um pacote deste tamanho pela
+metade; este não.
+
+**E o pacote grande enche mais que um pequeno.** O corte é em corrente absoluta —
+100 mA com o ajuste de 1 A. Num pacote de 400 mAh, 100 mA é C/4 e o corte
+acontece cedo, com a célula em torno de 90%. Em 6800 mAh, 100 mA é **C/68**, e o
+corte cai muito mais adiante na curva. Proporcionalmente, o pacote grande termina
+mais cheio.
+
+A corrente também se divide entre as células: 1 A em duas 18650 dá 0,5 A por
+célula, cerca de 0,15C. Carga mansa, boa para a vida útil.
+
+### O calor, que é o limite de verdade
+
+O TP4056 é um regulador **linear**: ele dissipa a diferença de tensão em calor.
+A 1 A, com a célula em 3,4 V, são `(5 − 3,4) × 1 = 1,6 W` num encapsulamento
+SOP-8. A regulação térmica reduz a corrente ao aproximar-se de 145 °C no die, e o
+sintoma é a carga demorar bem mais do que a conta sugere.
+
+| Ajuste | Dissipação | Tempo real de carga |
+|---|---|---|
+| 1 A (padrão do módulo) | ~1,6 W, entra em limitação térmica | ~12 a 15 h |
+| 500 mA (Rprog 2,4 kΩ) | ~0,8 W, sem limitação | ~14 h |
+
+Baixar para 500 mA **quase não custa tempo**, porque a limitação térmica já
+segurava a corrente de qualquer modo. Troca-se um módulo escaldando por um morno
+pelo mesmo tempo total — e é a escolha certa se a carga acontecer com o aparelho
+fechado na caixa.
+
+Se catorze horas incomodarem, o caminho é o **TP5100**: ele é chaveado em vez de
+linear, então não queima a diferença em calor e entrega 2 A sem esquentar como o
+TP4056 esquenta a 1 A.
 
 ### Três cuidados com o paralelo
 
