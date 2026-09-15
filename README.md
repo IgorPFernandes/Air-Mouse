@@ -21,7 +21,10 @@ macOS, Linux, Android e iPadOS.
   sendo movido.
 - **Modo scroll** com o botão do meio segurado.
 - **Nível de bateria** reportado ao sistema operacional.
-- **Sono profundo** após inatividade, com despertar por botão.
+- **Gestão de energia em três estados** — ativo, ocioso com a conexão mantida e
+  sono profundo. Cerca de 20 dias de autonomia em uso realista com uma célula de
+  1000 mAh; ver [ENERGIA.md](docs/ENERGIA.md).
+- **Despertar por movimento**: pegar o aparelho já o acorda, sem apertar nada.
 
 ---
 
@@ -38,7 +41,7 @@ macOS, Linux, Android e iPadOS.
 │   ├── button.{h,cpp}        debounce
 │   ├── battery.{h,cpp}       leitura do ADC e curva da célula
 │   ├── status_led.{h,cpp}    estado visual
-│   └── power.{h,cpp}         sono profundo
+│   └── power.{h,cpp}         clock, light sleep e sono profundo
 ├── tools/
 │   └── i2c_scanner/          diagnóstico do barramento I²C
 └── docs/
@@ -54,6 +57,7 @@ macOS, Linux, Android e iPadOS.
 | [MONTAGEM.md](docs/MONTAGEM.md) | Montagem em etapas, com teste a cada uma |
 | [ARQUITETURA.md](docs/ARQUITETURA.md) | Como o firmware funciona e por quê |
 | [AJUSTES.md](docs/AJUSTES.md) | Ajuste de sensibilidade e diagnóstico |
+| [ENERGIA.md](docs/ENERGIA.md) | Orçamento de consumo e autonomia |
 
 ---
 
@@ -101,8 +105,9 @@ Se o upload falhar na SuperMini: segure **BOOT**, toque em **RESET**, solte o
 | Botão esquerdo | Clique esquerdo |
 | Botão direito | Clique direito |
 | Botão do meio segurado + movimento | Rolagem |
-| 5 min de inatividade | Sono profundo |
-| Botão esquerdo | Desperta |
+| 4 s parado | Estado ocioso, conexão mantida |
+| 2 min parado | Sono profundo |
+| Mover o aparelho, ou botão esquerdo | Desperta |
 
 O *bonding* está habilitado: depois do primeiro pareamento o host reconecta
 sozinho.
