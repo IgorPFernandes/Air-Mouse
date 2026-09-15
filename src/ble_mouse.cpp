@@ -1,9 +1,12 @@
 #include "ble_mouse.h"
 
+#include <Arduino.h>
 #include <NimBLEDevice.h>
 #include <NimBLEHIDDevice.h>
 
 #include <string>
+
+#include "config.h"
 
 namespace {
 
@@ -51,16 +54,41 @@ const uint8_t kReportMap[] = {
 };
 
 NimBLEHIDDevice      *g_hid       = nullptr;
-NimBLECharacteristic *g_input     = nullptr;
-volatile bool         g_connected = false;
+NimBLECharacteristic *g_input      = nullptr;
+NimBLEServer         *g_server     = nullptr;
+volatile bool         g_connected  = false;
+volatile uint16_t     g_connHandle = 0;
+volatile uint32_t     g_stateSince = 0;
+bool                  g_lowLatency = false;
+
+esp_power_level_t txPowerLevel() {
+  switch (BLE_TX_POWER_DBM) {
+    case -12: return ESP_PWR_LVL_N12;
+    case -9:  return ESP_PWR_LVL_N9;
+    case -6:  return ESP_PWR_LVL_N6;
+    case -3:  return ESP_PWR_LVL_N3;
+    case 0:   return ESP_PWR_LVL_N0;
+    case 3:   return ESP_PWR_LVL_P3;
+    case 6:   return ESP_PWR_LVL_P6;
+    default:  return ESP_PWR_LVL_P9;
+  }
+}
 
 class ServerCallbacks : public NimBLEServerCallbacks {
-  void onConnect(NimBLEServer *) override {
+  // Sobrecarga com descritor: e a unica que entrega o handle da conexao,
+  // necessario para renegociar os parametros depois.
+  void onConnect(NimBLEServer *, ble_gap_conn_desc *desc) override {
     g_connected = true;
+    g_connHandle = desc->conn_handle;
+    g_stateSince = millis();
+    g_lowLatency = false;
   }
 
   void onDisconnect(NimBLEServer *) override {
     g_connected = false;
+    g_stateSince = millis();
+    NimBLEDevice::getAdvertising()->setMinInterval(ADV_INTERVAL_FAST);
+    NimBLEDevice::getAdvertising()->setMaxInterval(ADV_INTERVAL_FAST);
     NimBLEDevice::startAdvertising();
   }
 };
@@ -71,14 +99,14 @@ namespace BleMouse {
 
 void begin(const char *deviceName, const char *manufacturer) {
   NimBLEDevice::init(deviceName);
-  NimBLEDevice::setPower(ESP_PWR_LVL_P9);
+  NimBLEDevice::setPower(txPowerLevel());
   // Bonding habilitado para o host reconectar sozinho apos o primeiro pareamento.
   NimBLEDevice::setSecurityAuth(true, false, true);
 
-  NimBLEServer *server = NimBLEDevice::createServer();
-  server->setCallbacks(new ServerCallbacks());
+  g_server = NimBLEDevice::createServer();
+  g_server->setCallbacks(new ServerCallbacks());
 
-  g_hid = new NimBLEHIDDevice(server);
+  g_hid = new NimBLEHIDDevice(g_server);
   g_input = g_hid->inputReport(1);
 
   // Sobrecarga com std::string de proposito: um const char* passado para
@@ -94,11 +122,38 @@ void begin(const char *deviceName, const char *manufacturer) {
   advertising->setAppearance(HID_MOUSE);
   advertising->addServiceUUID(g_hid->hidService()->getUUID());
   advertising->setScanResponse(true);
+  advertising->setMinInterval(ADV_INTERVAL_FAST);
+  advertising->setMaxInterval(ADV_INTERVAL_FAST);
   advertising->start();
+
+  g_stateSince = millis();
 }
 
 bool connected() {
   return g_connected;
+}
+
+void setLowLatency(bool active) {
+  if (!g_connected || g_server == nullptr) return;
+  if (g_lowLatency == active) return;
+
+  g_server->updateConnParams(g_connHandle, CONN_INTERVAL_MIN, CONN_INTERVAL_MAX,
+                             active ? CONN_LATENCY_ACTIVE : CONN_LATENCY_IDLE, CONN_TIMEOUT);
+  g_lowLatency = active;
+}
+
+void slowDownAdvertising() {
+  if (g_connected) return;
+
+  NimBLEAdvertising *advertising = NimBLEDevice::getAdvertising();
+  if (advertising->isAdvertising()) advertising->stop();
+  advertising->setMinInterval(ADV_INTERVAL_SLOW);
+  advertising->setMaxInterval(ADV_INTERVAL_SLOW);
+  advertising->start();
+}
+
+uint32_t millisSinceConnected() {
+  return millis() - g_stateSince;
 }
 
 void sendReport(uint8_t buttons, int16_t dx, int16_t dy, int8_t wheel, int8_t pan) {

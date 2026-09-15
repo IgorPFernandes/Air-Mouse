@@ -20,4 +20,16 @@ void sendReport(uint8_t buttons, int16_t dx, int16_t dy, int8_t wheel, int8_t pa
 
 void setBatteryLevel(uint8_t percent);
 
+// Alterna o slave latency da conexao. Com latencia alta o radio deixa de
+// acordar a cada evento de conexao quando nao ha nada a enviar, sem perder a
+// capacidade de responder no primeiro evento seguinte quando houver.
+// Chamar so na transicao de estado: renegociar parametros custa tempo de radio.
+void setLowLatency(bool active);
+
+// Reduz o intervalo de anuncio depois da janela inicial de busca.
+void slowDownAdvertising();
+
+// Tempo desde o ultimo evento de conexao ou inicio do anuncio.
+uint32_t millisSinceConnected();
+
 }  // namespace BleMouse
