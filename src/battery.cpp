@@ -27,20 +27,36 @@ namespace Battery {
 void begin() {
 #if BATTERY_SENSE_ENABLED
   analogSetPinAttenuation(PIN_BAT_ADC, ADC_11db);
+#if BATTERY_GATED
+  // Alta impedancia em repouso: sem corrente pelo divisor fora da medicao.
+  pinMode(PIN_BAT_GND, INPUT);
+#endif
 #endif
 }
 
 float volts() {
-#if BATTERY_SENSE_ENABLED
+#if !BATTERY_SENSE_ENABLED
+  return 4.2f;
+#else
+#if BATTERY_GATED
+  pinMode(PIN_BAT_GND, OUTPUT);
+  digitalWrite(PIN_BAT_GND, LOW);
+  // O capacitor do divisor precisa carregar antes da primeira amostra valida.
+  delay(2);
+#endif
+
   // O ADC do ESP32-C3 e ruidoso o bastante para a leitura unica oscilar
   // varios pontos percentuais entre chamadas.
   uint32_t millivolts = 0;
   for (uint8_t i = 0; i < kSamples; i++) {
     millivolts += analogReadMilliVolts(PIN_BAT_ADC);
   }
+
+#if BATTERY_GATED
+  pinMode(PIN_BAT_GND, INPUT);
+#endif
+
   return (millivolts / static_cast<float>(kSamples)) * BAT_DIVIDER_RATIO / 1000.0f;
-#else
-  return 4.2f;
 #endif
 }
 
