@@ -273,26 +273,31 @@ com massa × distância ao quadrado. Duas consequências práticas:
 
 E o retorno é menor do que parece, porque a autonomia já estava resolvida:
 
-| Bateria | Jornadas de 8 h por carga | Peso do conjunto |
+| Bateria | Autonomia | Peso do conjunto |
 |---|---|---|
-| LiPo 1000 mAh | ~31 | **~66 g** |
-| 1 × 18650 (3400 mAh) | ~106 | ~102 g |
-| 2 × 18650 (6800 mAh) | ~212 | ~160 g |
+| LiPo 1000 mAh | ~1 semana | **~66 g** |
+| 1 × 18650 (3400 mAh) | ~3,3 semanas | ~102 g |
+| 2 × 18650 (6800 mAh) | ~6,7 semanas | ~160 g |
 
-(Jornadas em perfil de apresentação; ver [ENERGIA.md](ENERGIA.md#perfil-de-jornada-de-8-horas).)
+Jornada de 8 h com o aparelho na mão; cálculo no
+[README](../README.md#autonomia).
 
-A LiPo de 1000 mAh entra na faixa de peso do apresentador comercial e ainda dá
-seis semanas entre cargas. Para uso de sala de aula, é a opção que mais se parece
-com o objeto que as pessoas já sabem segurar.
+**É neste perfil que as duas células se justificam.** Segurar o aparelho o mantém
+em estado ativo — o estado ocioso só atua quando ele é apoiado — e o consumo sobe
+para 176 mAh por jornada. Com uma LiPo, o professor carregaria toda semana; com
+duas 18650, a cada mês e meio.
 
-A segunda célula troca **+45 g no punho por dois meses a mais entre cargas**,
-partindo de um aparelho que já ficava dois meses. Uma célula só usa exatamente a
-mesma ligação — é só omitir a segunda.
+A troca continua sendo peso por autonomia, mas agora com números que mudam a
+rotina de quem usa, e não apenas o número no papel.
 
-Dito isso, o projeto está documentado para duas, e a decisão é sua: se a ideia é
-um controle que fica meses largado na gaveta e raramente é usado em sessões
-longas, duas células fazem sentido. Se você vai segurá-lo por uma hora seguida,
-vale pegar uma 18650 na mão antes de decidir.
+A segunda célula troca **+58 g no punho por 3,4 semanas a mais entre cargas**.
+Uma célula só usa exatamente a mesma ligação — é só omitir a segunda, sem mudar
+nada no firmware.
+
+A decisão depende de quanto tempo seguido o aparelho fica erguido. Se o professor
+o segura durante a aula inteira, o peso vira queixa antes da autonomia virar
+problema; se ele alterna entre segurar e apoiar, as duas células compensam. Vale
+pegar uma 18650 na mão antes de fechar a caixa.
 
 ### Medição de bateria (opcional)
 

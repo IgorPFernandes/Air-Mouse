@@ -71,10 +71,16 @@ O cálculo detalhado, componente por componente, está no
 **[README](../README.md#autonomia)** — capacidade realmente disponível, consumo
 de cada peça em cada estado, consumo por jornada e autodescarga.
 
-Resumo, com duas 18650 em paralelo e perfil de apresentação: **~29 semanas**, ou
-cerca de sete meses entre cargas.
+Resumo, com duas 18650 em paralelo e uma jornada de 8 h com o aparelho na mão:
+**~6,7 semanas** entre cargas.
 
-Dois pontos que o cálculo deixa claros e que vale destacar aqui:
+Três pontos que o cálculo deixa claros e que vale destacar aqui:
+
+**Segurar o aparelho o mantém em estado ativo.** O estado ocioso exige 4 s
+seguidos abaixo de 6 °/s, e uma mão humana segurando um objeto nunca fica assim.
+O estado ocioso só entra em cena quando o aparelho é apoiado. Isso significa que,
+em uso de sala de aula, a economia do estado ocioso quase não é exercida — e o
+consumo do estado ativo passa a ser praticamente o consumo total.
 
 **Nem toda a capacidade é acessível.** O aparelho para de funcionar quando a
 célula chega perto de 3,4 V, porque o regulador da placa perde a regulação e o

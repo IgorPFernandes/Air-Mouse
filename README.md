@@ -23,7 +23,8 @@ macOS, Linux, Android e iPadOS.
 - **Nível de bateria** reportado ao sistema operacional.
 - **Gestão de energia em três estados** — ativo (~22 mA), ocioso com a conexão
   mantida (~1,9 mA) e sono profundo (~84 µA). Com duas 18650 em paralelo, cerca
-  de **7 meses** entre cargas em uso de apresentação; ver [Autonomia](#autonomia).
+  de **6,7 semanas** entre cargas numa jornada de 8 h com o aparelho na mão; ver
+  [Autonomia](#autonomia).
 - **Despertar por movimento**: pegar o aparelho já o acorda, sem apertar nada.
 - **Botão de centralizar**, para reencontrar o cursor quando se perde de vista.
 - **Três níveis de velocidade** com confirmação por LED RGB.
@@ -203,16 +204,36 @@ alteração de firmware.
 
 ### Passo 3 — Consumo por jornada
 
-Perfil de apresentação: 8 h de expediente com ~10% do tempo em movimento.
+**O aparelho fica na mão, e isso muda tudo.** O estado ocioso exige 4 segundos
+seguidos abaixo de 6 °/s. Uma mão humana segurando um objeto nunca fica assim:
+tremor, balanço do corpo, gesticular ao falar, caminhar pela sala. O giroscópio
+lê acima do limiar quase o tempo todo.
+
+Na prática, **segurar o aparelho o mantém em estado ativo**. O estado ocioso só
+entra em cena quando ele é apoiado em algum lugar.
+
+Perfil de referência — 8 h na mão, 16 h desligado na chave:
 
 | Fase | Duração | Corrente | Consumo |
 |---|---:|---:|---:|
-| Ativo | 0,8 h | 22 mA | 17,6 mAh |
-| Ocioso | 7,2 h | 1,9 mA | 13,7 mAh |
-| Sono profundo | 16 h | 0,084 mA | 1,3 mAh |
-| **Total por jornada** | | | **32,6 mAh** |
+| Ativo | 8 h | 22 mA | 176 mAh |
+| Desligado na chave | 16 h | 0 mA | 0 mAh |
+| **Total por jornada** | | | **176 mAh** |
 
-Fim de semana, 24 h dormindo: 2,0 mAh por dia.
+A chave física corta OUT+ antes do ESP32, então desligado é zero de verdade.
+Deixar em sono profundo em vez de desligar custaria 1,3 mAh na noite — diferença
+sem importância, mas a chave é o hábito mais simples de manter.
+
+Dois perfis alternativos, para você situar o seu caso entre eles:
+
+| Perfil | Ativo | Ocioso | Por jornada |
+|---|---:|---:|---:|
+| Na mão o tempo todo | 8 h | 0 h | 176 mAh |
+| Na mão com pausas na mesa | 6 h | 2 h | 136 mAh |
+| Apoiado, pego só para apontar | 0,8 h | 7,2 h | 33 mAh |
+
+O primeiro é o realista para uso em sala de aula, e é o que orienta os números
+adiante. Os outros dois exigem que o aparelho seja pousado com frequência.
 
 ### Passo 4 — A autodescarga, que ninguém conta
 
@@ -223,45 +244,80 @@ nada. Adotando 3%:
 6164 mAh × 3% = 185 mAh por mês = 42,6 mAh por semana
 ```
 
-Numa semana de uso, isso é o seguinte:
+Numa semana de trabalho, com o aparelho desligado nos fins de semana:
 
 | Item | Por semana |
 |---|---:|
-| 5 jornadas × 32,6 mAh | 163 mAh |
-| 2 dias de fim de semana × 2,0 mAh | 4 mAh |
+| 5 jornadas × 176 mAh | 880 mAh |
+| 2 dias de fim de semana, desligado | 0 mAh |
 | Autodescarga | 43 mAh |
-| **Total** | **210 mAh** |
+| **Total** | **923 mAh** |
 
-**A autodescarga responde por 20% do consumo total.** Ela não depende de uso — é
-a química da célula. É também a razão pela qual dobrar a capacidade rende menos
-que o dobro de autonomia: quanto maior o pacote, mais ele perde sozinho.
+A autodescarga não depende de uso — é a química da célula. Neste perfil ela
+responde por 5% do total, mas num perfil leve chegaria a 20%, e é a razão pela
+qual dobrar a capacidade rende menos que o dobro de autonomia.
 
 ### Resultado
 
 ```
-6164 mAh ÷ 210 mAh por semana = 29 semanas
+6164 mAh ÷ 923 mAh por semana = 6,7 semanas
 ```
+
+Com duas 18650 em paralelo:
 
 | Perfil de uso | Autonomia |
 |---|---|
-| Apresentação (~10% em movimento) | **~29 semanas** (~6,7 meses) |
-| Uso misto (~25% em movimento) | ~18 semanas (~4,2 meses) |
-| Uso intenso (~50% em movimento) | ~11 semanas (~2,5 meses) |
-| Movimento contínuo, sem pausas | **~277 horas** |
+| **Na mão o tempo todo (referência)** | **~6,7 semanas** (~1,5 mês) |
+| Na mão com pausas na mesa | ~8,5 semanas |
+| Apoiado, pego só para apontar | ~29 semanas |
+| Movimento contínuo, sem parar | ~280 horas |
+
+Comparação entre baterias, no perfil de referência:
+
+| Bateria | Capacidade utilizável | Autonomia |
+|---|---:|---|
+| LiPo 1000 mAh | ~900 mAh | **~1 semana** |
+| 1 × 18650 (3400 mAh) | ~3082 mAh | ~3,3 semanas |
+| 2 × 18650 (6800 mAh) | ~6164 mAh | **~6,7 semanas** |
+
+É aqui que as duas células se justificam. Com uma LiPo, o professor carregaria
+toda semana; com uma 18650, a cada três semanas; com duas, a cada mês e meio. A
+carga de 12 a 15 h passa a acontecer seis vezes por ano, num fim de semana.
 
 ### O que pode derrubar esses números
 
-| Fator | Efeito |
+| Fator | Autonomia resultante |
 |---|---|
-| **LED de alimentação da placa não removido** | 2 mA contínuos = 336 mAh/semana. Autonomia cai de 29 para **11 semanas** |
-| **Regulador AMS1117 em vez de ME6211** | 5 mA de repouso = 840 mAh/semana. Autonomia cai para **~4 semanas** |
-| **Células falsificadas** | Muita 18650 vendida como "3400 mAh" entrega 1500 a 2200 mAh reais. Divide tudo por dois |
-| Temperatura baixa | Capacidade cai; a 0 °C, espere 20 a 30% a menos |
+| **Células falsificadas** | **~3,4 semanas.** Muita 18650 vendida como "3400 mAh" entrega 1500 a 2200 mAh reais |
+| Regulador AMS1117 em vez de ME6211 | ~5,5 semanas (−18%) |
+| LED de alimentação não removido | ~6,1 semanas (−9%) |
+| Temperatura baixa | A 0 °C, espere 20 a 30% a menos de capacidade |
 | Células desbalanceadas | 1 a 2% de perda |
 
-Os dois primeiros são de longe os mais importantes, e ambos são resolvidos na
-bancada, não no código: **desolde o LED de alimentação** e **confirme o CI
-regulador da placa** antes de acreditar em qualquer número acima.
+**Atenção à mudança de ordem.** Num aparelho que fica ligado o tempo todo, o LED
+de alimentação e o regulador dominam o consumo. Aqui não: com a chave desligada
+16 h por dia e nos fins de semana, esses drenos só atuam durante as 8 h de uso, e
+nelas os 22 mA do estado ativo já mandam em tudo.
+
+Continua valendo desolder o LED e preferir uma placa com ME6211 — mas o fator
+realmente perigoso passou a ser a **procedência das células**. Uma 18650 falsa
+corta a autonomia pela metade, e esse é o erro mais comum e mais caro da lista.
+
+### O que passou a valer a pena otimizar
+
+O estado ativo virou praticamente todo o consumo, e ele se divide assim:
+
+| Contribuição | Corrente | Fatia |
+|---|---:|---:|
+| ESP32-C3, CPU a 80 MHz | ~11 mA | 50% |
+| Rádio BLE a 125 Hz | ~7 mA | 32% |
+| MPU6050 a 200 Hz | 3,8 mA | 17% |
+
+Toda a economia que o firmware faz hoje — light sleep, slave latency, giroscópio
+em espera — atua sobre estados em que este aparelho quase não entra neste perfil
+de uso. Se a autonomia precisar subir, os caminhos são outros: reduzir
+`REPORT_HZ_ACTIVE` de 125 para 60 ou 75 Hz, e baixar a taxa do MPU6050 junto.
+São mudanças que valem medir antes, porque mexem na resposta do cursor.
 
 Discussão completa em [ENERGIA.md](docs/ENERGIA.md).
 
