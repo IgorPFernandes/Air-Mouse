@@ -6,7 +6,7 @@
 
 #include "config.h"
 #include "mpu6050.h"
-#include "status_led.h"
+#include "rgb_led.h"
 
 namespace {
 
@@ -55,7 +55,7 @@ bool wokeFromMotion() {
 }
 
 void deepSleep() {
-  StatusLed::off();
+  RgbLed::off();
 
   uint64_t wakeMask = 1ULL << PIN_BTN_LEFT;
 
