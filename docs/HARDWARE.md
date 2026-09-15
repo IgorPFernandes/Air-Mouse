@@ -147,13 +147,38 @@ exata.
 ```
 
 Em **paralelo**, não em série. A tensão continua 3,7 V nominais e a capacidade
-soma: duas células de 3400 mAh dão 6800 mAh. Foi o que você descreveu ao dizer
-"versão de 3,7 V", e está correto.
+soma: duas células de 3400 mAh dão 6800 mAh.
 
-**O TP4056 é um carregador de célula única.** Ele carrega um pacote em paralelo
-sem problema, porque eletricamente continua sendo 1S. O que ele **não** faz é
-carregar duas células em série — 2S exige um carregador de 8,4 V e um BMS
-próprio, e os 8,4 V resultantes passariam do limite do regulador da SuperMini.
+**O TP4056 carrega este pacote sem nenhum problema.** Ele é um carregador de um
+estágio de tensão (1S) — o que significa um *nível de tensão*, não uma única
+célula física. Para o TP4056, duas 18650 em paralelo são indistinguíveis de uma
+18650 grande: mesmos 4,2 V de término, mesmo critério de encerramento.
+
+O que ele **não** faz é carregar duas células em **série**. 2S resultaria em
+8,4 V, exigiria um carregador e um BMS próprios, e essa tensão passaria do limite
+do regulador da SuperMini.
+
+### O que o paralelo compra, e o que não compra
+
+O ganho é **capacidade**, não corrente. Uma única 18650 entrega de 2 a 10 A de
+descarga contínua, e este aparelho consome 22 mA no pico — a capacidade de
+corrente de uma célula já sobra por um fator de cem. O paralelo não deixa nada
+mais rápido nem mais forte; ele dobra o tempo entre cargas, e só.
+
+Vale ter isso claro antes de decidir, porque o peso extra está comprando dias de
+autonomia, não desempenho.
+
+### Efeitos sobre a carga
+
+A corrente do TP4056 se divide entre as células: 1 A em duas 18650 dá 0,5 A por
+célula, cerca de 0,15C. É uma carga mansa, boa para a vida útil — carregar uma
+célula sozinha a 1 A é mais agressivo.
+
+Em compensação, 6800 mAh a 1 A leva de **9 a 10 horas** contando a fase de tensão
+constante. O TP4056 não tem temporizador de segurança que atrapalhe cargas longas
+(ele encerra quando a corrente cai a cerca de 1/10 da programada), mas o CI
+esquenta e entra em limitação térmica, o que estica mais o processo. Se incomodar,
+o **TP5100** faz 2 A e corta esse tempo pela metade.
 
 ### Três cuidados com o paralelo
 
@@ -172,12 +197,6 @@ próprio, e os 8,4 V resultantes passariam do limite do regulador da SuperMini.
 E o de sempre com 18650: elas entregam corrente de curto muito maior que uma
 LiPo pequena. Um curto no circuito não é um fio que esquenta, é um fio que
 derrete. Capriche na bitola e evite emendas frouxas dentro da caixa.
-
-### Tempo de carga
-
-O TP4056 carrega a 1 A no máximo. Para 6800 mAh isso dá **cerca de 9 a 10
-horas** contando a fase de tensão constante. Se for demais, o TP5100 faz 2 A e
-corta esse tempo pela metade.
 
 ---
 
