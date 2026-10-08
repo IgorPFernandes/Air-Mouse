@@ -89,6 +89,18 @@ medições; composição peça por peça no [README](README.md#autonomia).
 - [AJUSTES.md](docs/AJUSTES.md) — sensibilidade, velocidade e diagnóstico.
 - [ENERGIA.md](docs/ENERGIA.md) — orçamento de consumo e autonomia.
 
+### Versão chaveiro (XIAO ESP32-C6) — em projeto
+
+- [CHAVEIRO_C6.md](docs/CHAVEIRO_C6.md): versão compacta para sala de aula, com
+  laser e um botão que grava e reenvia o código infravermelho do projetor. Traz a
+  lista de compras, a pinagem da XIAO ESP32-C6, o mapa de botões e os estados de
+  energia (desligado só acorda pelo botão, para não ligar sozinho na bolsa).
+- [hardware/caixa](hardware/caixa/README.md): caixa paramétrica em OpenSCAD de
+  40,4 × 37 × 24,5 mm, com quinas arredondadas, estrias laterais, bandeja que
+  prende o MPU6050 e passagem escondida para a argola do chaveiro. STL das três
+  peças incluídos; nenhuma foi impressa.
+- O firmware para o C6 ainda não foi escrito.
+
 ---
 
 ## Decisões de projeto que valem registro

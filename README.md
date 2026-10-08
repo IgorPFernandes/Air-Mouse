@@ -48,6 +48,8 @@ macOS, Linux, Android e iPadOS.
 │   └── power.{h,cpp}         clock, light sleep e sono profundo
 ├── tools/
 │   └── i2c_scanner/          diagnóstico do barramento I²C
+├── hardware/
+│   └── caixa/                caixa imprimível da versão chaveiro (SCAD + STL)
 └── docs/
 ```
 
@@ -62,6 +64,8 @@ macOS, Linux, Android e iPadOS.
 | [ARQUITETURA.md](docs/ARQUITETURA.md) | Como o firmware funciona e por quê |
 | [AJUSTES.md](docs/AJUSTES.md) | Ajuste de sensibilidade e diagnóstico |
 | [ENERGIA.md](docs/ENERGIA.md) | Orçamento de consumo e autonomia |
+| [CHAVEIRO_C6.md](docs/CHAVEIRO_C6.md) | Versão chaveiro com XIAO ESP32-C6, laser e controle IR (em projeto): lista de compras, ligações, botões |
+| [hardware/caixa](hardware/caixa/README.md) | Caixa imprimível da versão chaveiro: STL, impressão e montagem |
 
 ---
 
@@ -345,6 +349,13 @@ algo não funcionar.
 | Consumo e autonomia | Estimado por folha de dados | **Alto — nenhuma medição feita** |
 
 Se algo falhar na bancada, comece pelas duas últimas linhas.
+
+A [versão chaveiro](docs/CHAVEIRO_C6.md) está um passo atrás:
+
+| Subsistema | Estado | Risco |
+|---|---|---|
+| Caixa do chaveiro | STL gerado e conferido no OpenSCAD, não impresso | Médio — medidas da bateria estimadas por foto |
+| Firmware para o XIAO ESP32-C6 | Não iniciado | — exige core Arduino 3.x e nova pinagem |
 
 Histórico completo do que foi construído em [CHANGELOG.md](CHANGELOG.md).
 
