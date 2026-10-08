@@ -200,14 +200,14 @@ module tampa() {
             }
             // soquetes dos botoes 6x6 (o corpo do botao encaixa por baixo)
             for (b = botoes) translate([b[0] - 3.95, b[1] - 3.95, int_h - 2.5]) cube([7.9, 7.9, 2.5]);
-            // soquete do receptor IR
-            translate([rec_x - 3.6, rec_y - 4.2, int_h - 2.5]) cube([7.2, 8.4, 2.5]);
+            // soquete do receptor IR (cabe o TSOP38238, 5 x 6,95 mm, e o VS1838B)
+            translate([rec_x - 3.9, rec_y - 4.8, int_h - 2.5]) cube([7.8, 9.6, 2.5]);
         }
         for (b = botoes) {
             translate([b[0] - 3.15, b[1] - 3.15, int_h - 3]) cube([6.3, 6.3, 3]);
             translate([b[0], b[1], int_h - 1]) cylinder(d = 4.0, h = t_tampa + 2);
         }
-        translate([rec_x - 2.9, rec_y - 3.5, int_h - 3]) cube([5.8, 7.0, 3]);
+        translate([rec_x - 3.1, rec_y - 4.0, int_h - 3]) cube([6.2, 8.0, 3]);
         translate([rec_x, rec_y, int_h - 1]) cylinder(d = 5, h = t_tampa + 2);
         translate([led_x, led_y, int_h - 1]) cylinder(d = 3.1, h = t_tampa + 2);
         // marcas para achar no tato: anel no botao 1, ponto ao lado do botao 4
@@ -241,7 +241,7 @@ module componentes(e = 0) {
     }
     translate([0, 0, 4 * e]) {
         for (b = botoes) botao_6x6(b[0], b[1]);
-        color("black") translate([rec_x - 2.8, rec_y - 3.4, int_h - 4.5]) cube([5.6, 6.8, 4.5]);
+        color("black") translate([rec_x - 2.5, rec_y - 3.475, int_h - 4.8]) cube([5.0, 6.95, 4.8]);
         color("white") translate([led_x, led_y, int_h - 4]) cylinder(d = 3, h = 5.3);
     }
 }

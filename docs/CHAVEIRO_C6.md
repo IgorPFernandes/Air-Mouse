@@ -30,26 +30,35 @@ gravado do controle original — para nunca mais procurar o controle.
 
 ### Comprar
 
-| Peça | O que pesquisar | Qtd | Observação |
-|---|---|---|---|
-| Módulo laser | `módulo laser 650nm 6mm 3V` | 1 | Corpo de 6 mm de diâmetro. Prefira **1 mW (classe 2)**; os de 5 mW são fortes demais para sala de aula. Versão de **3 V**. |
-| LED infravermelho | `LED IR 940nm 3mm` (ex.: IR204) | 1 | **3 mm**, transparente ou azulado. É o emissor do controle remoto. |
-| Receptor infravermelho | `receptor IR 38kHz VS1838B` ou `TSOP38238` | 1 | Para gravar o código do controle original. |
-| Botão táctil | `chave táctil 6x6x7mm` | 4 | 4 terminais, altura total de **7 mm** (a haste sai 1,5 mm acima da tampa). |
-| LED RGB | `LED RGB 3mm ânodo comum difuso` | 1 | Difuso fica mais bonito. Se só achar cátodo comum, o firmware tem a opção. |
-| Transistor NPN | `transistor S8050` (TO-92) | 2 | Um para o laser, outro para o LED IR. Montar deitado. |
-| Resistor 22 Ω | `resistor 22R 1/4W` | 1 | Limita a corrente do LED IR. |
-| Resistor 1 kΩ | `resistor 1K 1/4W` | 2 | Base dos transistores. |
-| Resistor 100 kΩ | `resistor 100K 1/4W` | 2 | Puxa a base para o GND: sem ele o laser pode acender sozinho no sono profundo. |
-| Resistor 220 Ω | `resistor 220R 1/4W` | 3 | Um por cor do LED RGB. |
-| Resistor 200 kΩ | `resistor 200K 1/4W` | 2 | Divisor para medir a bateria. |
-| Capacitor 100 nF | `capacitor cerâmico 100nF` | 1 | Filtro do divisor da bateria. |
-| Capacitor 100 µF | `capacitor eletrolítico 100uF 6.3V 5x5` | 1 | Segura os pulsos do LED IR. Procure o de 5 mm de altura. |
-| Placa perfurada | `placa perfurada ilhada` | 1 | Cortar um pedaço de ~11 × 15 mm para os transistores. |
-| Fio fino | `fio wire wrap 30AWG` ou `fio cabinho 28AWG silicone` | 1 rolo | Fio fino deixa a montagem caber. |
-| Fita kapton | `fita kapton` | 1 | Isola o TP4056 da bateria e as placas entre si. |
-| Argola de chaveiro | `argola chaveiro 25mm` | 1 | Até 25 mm com arame de 2 mm, ou até 30 mm com arame de 1,5 mm. |
-| Filamento | PETG ou PLA | — | PETG aguenta melhor queda e calor (carro, bolsa ao sol). |
+Modelos escolhidos para caber na caixa. Os três primeiros são os que mais
+variam entre anúncios: confira os itens da coluna *Confira no anúncio*.
+
+| Peça | Modelo | Pesquise por | Confira no anúncio | Qtd |
+|---|---|---|---|---|
+| Laser | Módulo laser de ponto 650 nm, **1 mW, 3 V, 6 × 10 mm**, com driver embutido | `650nm 1mW 3V 6x10mm laser dot module` (AliExpress, Amazon) | 1 mW (não 5 mW), 3 V (não 5 V), 6 mm de diâmetro, até 10,5 mm de comprimento, "dot" (ponto, não linha nem cruz) | 1 |
+| LED infravermelho | **Vishay TSAL4400** — 3 mm, 940 nm, ±25°, 100 mA contínuo | `TSAL4400` (Mouser, DigiKey, LCSC, AliExpress) | 940 nm (não 850 nm), corpo de 3 mm | 1 |
+| Receptor infravermelho | **Vishay TSOP38238** — 38 kHz, 2,5–5,5 V, 5 × 4,8 × 6,95 mm | `TSOP38238` | Componente solto de 3 pernas, não o módulo KY-022 na plaquinha | 1 |
+| Botão táctil | Chave táctil 6 × 6 mm, **altura total 7 mm**, 4 terminais (ex.: BTT-A06-7.0, Metaltex série A06 de 7,0 mm) | `chave táctil 6x6x7mm` | Furo passante (não SMD), 7 mm com o atuador, corpo de 3,5 mm | 4 |
+| LED RGB | LED RGB de 3 mm, **ânodo comum**, lente difusa, 4 terminais | `LED RGB 3mm ânodo comum difuso` | "Ânodo comum" (common anode) e 3 mm | 1 |
+| Transistor | **SS8050** (onsemi ou JSMSEMI), NPN, TO-92, 1,5 A | `SS8050 TO-92` | SS8050, não S8050 — o S8050 aguenta só 0,5 A. Pinagem E-B-C | 2 |
+| Capacitor | Eletrolítico 100 µF, 6,3 V ou 10 V, **5 × 5 mm** | `capacitor eletrolítico 100uF 6.3V 5x5` | Altura de 5 mm (os comuns têm 11 mm e não cabem) | 1 |
+| Capacitor | Cerâmico 100 nF | `capacitor cerâmico 100nF` | — | 1 |
+| Resistores | 1/8 W (menores que os de 1/4 W): 22 Ω, 2 × 68 Ω, 220 Ω, 2 × 1 kΩ, 2 × 100 kΩ, 2 × 200 kΩ | `resistor 1/8W` | — | 10 |
+| Placa perfurada | Placa ilhada, cortada em ~11 × 15 mm para os transistores | `placa perfurada ilhada` | — | 1 |
+| Fio | Wire wrap 30 AWG (isolamento Kynar) | `fio wire wrap 30AWG` | — | 1 rolo |
+| Fita kapton | — | `fita kapton` | — | 1 |
+| Argola de chaveiro | 25 mm, arame de até 2 mm | `argola chaveiro 25mm` | Ou até 30 mm se o arame for de 1,5 mm | 1 |
+| Filamento | PETG (ou PLA) | — | PETG aguenta melhor queda e calor | — |
+
+**Se não achar no Brasil:**
+
+- **Laser:** quase todo anúncio daqui é de 5 V e 5 mW (o KY-008). Para sala de
+  aula, vale importar o de 1 mW. O KY-008 com plaquinha nem cabe na caixa.
+- **LED IR:** um `LED IR 940nm 3mm` genérico funciona, desde que seja de
+  940 nm. O TSAL4400 tem a ficha conhecida (aguenta os pulsos de 120 mA do
+  circuito).
+- **Receptor:** o **VS1838B** é vendido em todo lugar e também serve. O soquete
+  da tampa foi alargado para caber os dois.
 
 ---
 
@@ -74,9 +83,11 @@ bandeja.
 | LED IR | D3 | 21 | Via transistor, ver abaixo |
 | Laser | D9 | 20 | Via transistor, ver abaixo |
 | Alimentação do receptor IR | D6 | 16 | O receptor só é ligado no modo de gravação (gasta ~1 mA) |
-| LED RGB — R / G / B | D7 / D10 / D8 | 17 / 18 / 19 | Cada cor com 220 Ω; ânodo comum no 3V3 |
+| LED RGB — R / G / B | D7 / D10 / D8 | 17 / 18 / 19 | R com 220 Ω, G e B com 68 Ω; ânodo comum no 3V3 |
 
-Os botões usam o pull-up interno: não precisam de resistor.
+Os botões usam o pull-up interno: não precisam de resistor. No LED RGB, verde e
+azul levam resistor menor porque precisam de quase 3 V para acender e ficariam
+apagados com 220 Ω no 3,3 V.
 
 ### Alimentação
 
