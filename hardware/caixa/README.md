@@ -1,6 +1,6 @@
 # Caixa do chaveiro
 
-Caixa imprimível da [versão chaveiro](../../docs/CHAVEIRO_C6.md): 40,4 × 37 ×
+Caixa imprimível da [versão chaveiro](../../docs/CHAVEIRO_C6.md): 42 × 37,2 ×
 24,5 mm, com todas as quinas arredondadas, estrias nas laterais e um rasgo
 discreto no canto traseiro de baixo para a argola do chaveiro.
 
@@ -36,6 +36,7 @@ do arquivo, na seção *Bateria com o TP4056 colado*:
 | `tp_larg` / `tp_comp` | 17,5 / 28 mm | Placa do TP4056 |
 | `tp_recuo` | 0 mm | Quanto o USB do TP4056 fica para dentro da borda da bateria |
 | `mpu_larg` / `mpu_comp` | 16 / 21 mm | Placa do GY-521, sem os pinos |
+| `folga_bat` | 1 mm | Folga de cada lado da bateria. Com 1 mm, cabe bateria de até 32 mm de largura |
 
 Depois de ajustar, escolha a peça em `peca` (base, tampa ou bandeja),
 renderize com **F6** e exporte com **F7**. Pela linha de comando:
@@ -43,6 +44,25 @@ renderize com **F6** e exporte com **F7**. Pela linha de comando:
 ```bash
 openscad -D 'peca="base"' -o air_mouse_base.stl air_mouse_case.scad
 ```
+
+---
+
+## Folgas
+
+Cada peça tem folga para a imprecisão da impressão (furos costumam sair 0,1–0,2 mm
+menores) e para a variação de medida entre fabricantes:
+
+| Onde | Folga |
+|---|---|
+| Bateria, dos lados | 1 mm de cada lado (`folga_bat`) |
+| Bateria + TP4056 até a bandeja | 1,2 mm, contando 0,5 mm para a bateria poder estufar |
+| MPU6050 e XIAO nos bolsos da bandeja | 0,3 mm de cada lado (justo de propósito: vão colados) |
+| Laser | Furo de 6,6 mm e recorte na frente da bandeja: cabe laser de até ~16 mm |
+| LED IR e LED RGB | Furos de 3,3 mm para LED de 3 mm |
+| Botões 6 × 6 mm | Soquete de 6,4 mm; haste de 3,5 mm em furo de 4 mm |
+| Receptor IR | Soquete de 6,2 × 8 mm (TSOP38238 tem 5 × 6,95 mm; cabe também o VS1838B) |
+| Transistores até a bandeja | ~0,7 mm: monte os transistores deitados |
+| Terminais dos botões até a XIAO e o MPU | 0,7–0,9 mm: corte os terminais curtos e solde os fios saindo de lado |
 
 ---
 

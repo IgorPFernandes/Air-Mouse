@@ -17,6 +17,7 @@ bat_esp  = 5.0;   // espessura da bateria (sem o TP4056)
 tp_larg  = 17.5;  // largura da placa TP4056
 tp_comp  = 28;    // comprimento da placa TP4056
 tp_recuo = 0;     // quanto o USB do TP4056 fica para dentro da borda da bateria
+folga_bat = 1.0;  // folga de cada lado da bateria (cobre bateria de ate bat_larg + 2*folga_bat)
 abrir_usb_tp4056 = false; // abre um 2o furo USB-C para carregar pelo TP4056
 
 /* [Placas] */
@@ -47,13 +48,15 @@ z_bandeja = z_tp_topo + 0.7;        // fundo da bandeja das placas
 z_placas  = z_bandeja + 1.0;        // XIAO e MPU apoiam aqui
 int_h     = z_placas + 8.5;         // altura interna (ate a tampa)
 
-pocket_mpu  = mpu_larg + 0.4;
-pocket_xiao = xiao_larg + 0.4;
+pocket_mpu  = mpu_larg + 0.6;       // 0,3 mm de folga de cada lado
+pocket_xiao = xiao_larg + 0.6;
 x_aba  = pocket_mpu;                // divisoria entre MPU e XIAO
 x_xiao = x_aba + 0.8;
-comp_placas = max(mpu_comp, xiao_comp) + 0.4;
+x_aba2 = x_xiao + pocket_xiao;      // aba do outro lado da XIAO
+comp_placas = max(mpu_comp, xiao_comp) + 0.6;
 
-int_w = max(pocket_mpu + 0.8 + pocket_xiao, bat_larg + 5.4);
+bat_x0 = folga_bat;                 // bateria afastada da parede esquerda
+int_w = max(x_aba2 + 0.8, bat_x0 + bat_larg + folga_bat + 5.0);
 int_l = max(bat_comp + 2.0, comp_placas + 10.6);
 y_bandeja = int_l - comp_placas;
 
@@ -65,12 +68,12 @@ bat_y1 = int_l - 0.2;
 bat_y0 = bat_y1 - bat_comp;
 tp_y1  = bat_y1 - tp_recuo;
 tp_y0  = tp_y1 - tp_comp;
-tp_usb_x = tp_larg / 2;
+tp_usb_x = bat_x0 + tp_larg / 2;
 tp_usb_z = z_bat + 1.6 + 1.6;
 
 // laser (6 mm) e LED IR (3 mm) deitados na faixa livre da bateria, ao lado do TP4056,
 // na mesma altura e com 1,2 mm de parede entre os dois furos
-laser_x = tp_larg + 4;
+laser_x = bat_x0 + tp_larg + 4;
 laser_z = z_bat + 3;
 ledir_d = 3;
 ledir_x = laser_x + 6.1;
@@ -100,7 +103,7 @@ barra_z    = 0.4;
 
 assert(bat_larg - tp_larg >= 12, "A faixa livre ao lado do TP4056 precisa de 12 mm para o laser e o LED IR");
 assert(y_bandeja >= 10.5, "Falta espaco na frente para o laser (10,5 mm)");
-assert(!argola || bolso_x0 >= bat_larg + 0.3, "Sem espaco ao lado da bateria para a passagem da argola");
+assert(!argola || bolso_x0 >= bat_x0 + bat_larg + 0.3, "Sem espaco ao lado da bateria para a passagem da argola");
 
 // ---------- utilitarios ----------
 module casca() {
@@ -160,7 +163,7 @@ module base() {
             translate([-50, -50, -50]) cube([200, 200, 50 + int_h]);
         }
         cube([int_w, int_l, int_h + 1]);
-        cil_y(laser_x, -parede - 1, laser_z, 6.4, parede + 2);   // laser
+        cil_y(laser_x, -parede - 1, laser_z, 6.6, parede + 2);   // laser
         cil_y(ledir_x, -parede - 1, ledir_z, ledir_d + 0.3, parede + 2);   // LED IR
         furo_usb(xiao_usb_x, xiao_usb_z);
         if (abrir_usb_tp4056) furo_usb(tp_usb_x, tp_usb_z);
@@ -177,7 +180,10 @@ module bandeja() {
         union() {
             translate([0.2, y_bandeja, z_bandeja]) cube([int_w - 0.4, int_l - y_bandeja - 0.2, 1.0]);
             translate([x_aba, y_bandeja, z_placas]) cube([0.8, int_l - y_bandeja - 0.2, 1.0]);
+            translate([x_aba2, y_bandeja, z_placas]) cube([0.8, int_l - y_bandeja - 0.2, 1.0]);
         }
+        // recorte na frente, em cima do laser: cabe laser de ate ~16 mm
+        translate([laser_x - 3.6, y_bandeja - 1, z_bandeja - 1]) cube([7.2, 4.0, 4]);
         // janela sob a XIAO para os fios dos pads de baixo (BAT+, BAT-, GPIO4-7)
         translate([x_xiao + 3, y_bandeja + 3, z_bandeja - 1]) cube([pocket_xiao - 6, comp_placas - 6.5, 3]);
         // passagem de fios ao lado do MPU (o resto fica inteiro para colar o MPU)
@@ -199,17 +205,17 @@ module tampa() {
                 translate([0.8, 0.8, -1]) cube([int_w - 2 * folga - 1.6, int_l - 2 * folga - 1.6, 4]);
             }
             // soquetes dos botoes 6x6 (o corpo do botao encaixa por baixo)
-            for (b = botoes) translate([b[0] - 3.95, b[1] - 3.95, int_h - 2.5]) cube([7.9, 7.9, 2.5]);
+            for (b = botoes) translate([b[0] - 4.0, b[1] - 4.0, int_h - 2.5]) cube([8.0, 8.0, 2.5]);
             // soquete do receptor IR (cabe o TSOP38238, 5 x 6,95 mm, e o VS1838B)
             translate([rec_x - 3.9, rec_y - 4.8, int_h - 2.5]) cube([7.8, 9.6, 2.5]);
         }
         for (b = botoes) {
-            translate([b[0] - 3.15, b[1] - 3.15, int_h - 3]) cube([6.3, 6.3, 3]);
+            translate([b[0] - 3.2, b[1] - 3.2, int_h - 3]) cube([6.4, 6.4, 3]);
             translate([b[0], b[1], int_h - 1]) cylinder(d = 4.0, h = t_tampa + 2);
         }
         translate([rec_x - 3.1, rec_y - 4.0, int_h - 3]) cube([6.2, 8.0, 3]);
         translate([rec_x, rec_y, int_h - 1]) cylinder(d = 5, h = t_tampa + 2);
-        translate([led_x, led_y, int_h - 1]) cylinder(d = 3.1, h = t_tampa + 2);
+        translate([led_x, led_y, int_h - 1]) cylinder(d = 3.3, h = t_tampa + 2);
         // marcas para achar no tato: anel no botao 1, ponto ao lado do botao 4
         translate([botoes[0][0], botoes[0][1], int_h + t_tampa - 0.4]) difference() {
             cylinder(d = 8, h = 1);
@@ -225,18 +231,18 @@ module botao_6x6(x, y) {
     color("gray") translate([x, y, int_h]) cylinder(d = 3.5, h = 3.5);
 }
 module componentes(e = 0) {
-    color("silver") translate([0, bat_y0, 0]) cube([bat_larg, bat_comp, bat_esp]);
+    color("silver") translate([bat_x0, bat_y0, 0]) cube([bat_larg, bat_comp, bat_esp]);
     translate([0, 0, e]) {
-        color("royalblue") translate([0, tp_y0, z_bat]) cube([tp_larg, tp_comp, 1.6]);
+        color("royalblue") translate([bat_x0, tp_y0, z_bat]) cube([tp_larg, tp_comp, 1.6]);
         color("gainsboro") translate([tp_usb_x - 4.45, tp_y1 - 7.4, z_bat + 1.6]) cube([8.9, 7.4, 3.2]);
         color("firebrick") cil_y(laser_x, 0, laser_z, 6, 10.5);
         color("darkslateblue") cil_y(ledir_x, 0, ledir_z, ledir_d, 5.3);
-        color("forestgreen") translate([tp_larg + 0.5, 12, z_bat]) cube([11.5, 15, 1.6]);
+        color("forestgreen") translate([bat_x0 + tp_larg + 0.5, 14, z_bat]) cube([11.5, 13, 1.6]);
     }
     translate([0, 0, 2 * e]) color("lightgray") bandeja();
     translate([0, 0, 3 * e]) {
-        color("teal") translate([0.2, int_l - mpu_comp, z_placas]) cube([mpu_larg, mpu_comp, 1.6]);
-        color("mediumpurple") translate([x_xiao + 0.2, int_l - xiao_comp, z_placas]) cube([xiao_larg, xiao_comp, xiao_pcb]);
+        color("teal") translate([0.3, int_l - 0.3 - mpu_comp, z_placas]) cube([mpu_larg, mpu_comp, 1.6]);
+        color("mediumpurple") translate([x_xiao + 0.3, int_l - xiao_comp, z_placas]) cube([xiao_larg, xiao_comp, xiao_pcb]);
         color("gainsboro") translate([xiao_usb_x - 4.45, int_l - 7.4, z_placas + xiao_pcb]) cube([8.9, 7.4, 3.2]);
     }
     translate([0, 0, 4 * e]) {

@@ -13,7 +13,7 @@ gravado do controle original — para nunca mais procurar o controle.
 |---|---|---|
 | Placa | ESP32-C3 SuperMini | Seeed XIAO ESP32-C6 |
 | Bateria | 2 × 18650 (6800 mAh) | LiPo 400 mAh com TP4056 colado |
-| Caixa | ≥ 65 × 40 mm de seção, ~160 g | 40,4 × 37 × 24,5 mm |
+| Caixa | ≥ 65 × 40 mm de seção, ~160 g | 42 × 37,2 × 24,5 mm |
 | Extras | — | Laser, controle IR com gravação |
 
 ---
