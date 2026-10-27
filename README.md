@@ -65,6 +65,7 @@ macOS, Linux, Android e iPadOS.
 | [AJUSTES.md](docs/AJUSTES.md) | Ajuste de sensibilidade e diagnóstico |
 | [ENERGIA.md](docs/ENERGIA.md) | Orçamento de consumo e autonomia |
 | [CHAVEIRO_C6.md](docs/CHAVEIRO_C6.md) | Versão chaveiro com XIAO ESP32-C6, laser e controle IR (em projeto): lista de compras, ligações, botões |
+| [ESQUEMATICO_C6.md](docs/ESQUEMATICO_C6.md) | Esquemático da versão chaveiro: mapa de pinos, circuito de cada componente e revisão das ligações |
 | [hardware/caixa](hardware/caixa/README.md) | Caixa imprimível da versão chaveiro: STL, impressão e montagem |
 
 ---

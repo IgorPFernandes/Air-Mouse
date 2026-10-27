@@ -42,8 +42,8 @@ variam entre anúncios: confira os itens da coluna *Confira no anúncio*.
 | LED RGB | LED RGB de 3 mm, **ânodo comum**, lente difusa, 4 terminais | `LED RGB 3mm ânodo comum difuso` | "Ânodo comum" (common anode) e 3 mm | 1 |
 | Transistor | **SS8050** (onsemi ou JSMSEMI), NPN, TO-92, 1,5 A | `SS8050 TO-92` | SS8050, não S8050 — o S8050 aguenta só 0,5 A. Pinagem E-B-C | 2 |
 | Capacitor | Eletrolítico 100 µF, 6,3 V ou 10 V, **5 × 5 mm** | `capacitor eletrolítico 100uF 6.3V 5x5` | Altura de 5 mm (os comuns têm 11 mm e não cabem) | 1 |
-| Capacitor | Cerâmico 100 nF | `capacitor cerâmico 100nF` | — | 1 |
-| Resistores | 1/8 W (menores que os de 1/4 W): 22 Ω, 2 × 68 Ω, 220 Ω, 2 × 1 kΩ, 2 × 100 kΩ, 2 × 200 kΩ | `resistor 1/8W` | — | 10 |
+| Capacitor | Cerâmico 100 nF | `capacitor cerâmico 100nF` | Um no divisor da bateria, outro no receptor IR | 2 |
+| Resistores | 1/8 W (menores que os de 1/4 W): 2 × 68 Ω, 220 Ω, 2 × 1 kΩ, 2 × 100 kΩ, 2 × 200 kΩ — e o de **22 Ω em 1/4 W** | `resistor 1/8W` e `resistor 22R 1/4W` | O de 22 Ω esquenta nos pulsos do LED IR (~0,3 W) | 10 |
 | Placa perfurada | Placa ilhada, cortada em ~11 × 15 mm para os transistores | `placa perfurada ilhada` | — | 1 |
 | Fio | Wire wrap 30 AWG (isolamento Kynar) | `fio wire wrap 30AWG` | — | 1 rolo |
 | Fita kapton | — | `fita kapton` | — | 1 |
@@ -70,6 +70,9 @@ MTCK, MTDO). Os quatro botões e o INT do MPU precisam acordar a placa, então o
 pads de baixo são obrigatórios — solde os fios neles antes de colocar a XIAO na
 bandeja.
 
+O desenho completo de cada ligação, com a revisão, está em
+[ESQUEMATICO_C6.md](ESQUEMATICO_C6.md).
+
 | Função | Pino da XIAO | GPIO | Ligação |
 |---|---|---|---|
 | Bateria (ADC) | D0 | 0 | BAT+ → 200 kΩ → D0 → 200 kΩ → GND, e 100 nF de D0 ao GND |
@@ -78,11 +81,11 @@ bandeja.
 | Botão 1 · liga / laser | pad MTMS | 4 | Outro lado no GND |
 | Botão 3 · centro | pad MTDI | 5 | Outro lado no GND |
 | INT do MPU6050 | pad MTCK | 6 | |
-| Sinal do receptor IR | pad MTDO | 7 | |
+| Sinal do receptor IR | pad MTDO | 7 | Saída OUT do receptor |
 | SDA / SCL do MPU6050 | D4 / D5 | 22 / 23 | VCC do MPU no 3V3 |
 | LED IR | D3 | 21 | Via transistor, ver abaixo |
 | Laser | D9 | 20 | Via transistor, ver abaixo |
-| Alimentação do receptor IR | D6 | 16 | O receptor só é ligado no modo de gravação (gasta ~1 mA) |
+| Alimentação do receptor IR | D6 | 16 | No VS do receptor, com 100 nF do VS ao GND encostado nele. Só é ligado no modo de gravação |
 | LED RGB — R / G / B | D7 / D10 / D8 | 17 / 18 / 19 | R com 220 Ω, G e B com 68 Ω; ânodo comum no 3V3 |
 
 Os botões usam o pull-up interno: não precisam de resistor. No LED RGB, verde e
@@ -102,12 +105,15 @@ Se quiser carregar pelo TP4056, ele vem de fábrica carregando a **1 A**, demais
 para 400 mAh: troque o resistor marcado `122` (R3) por um de 3 kΩ (~400 mA) e
 abra o furo dele na caixa (`abrir_usb_tp4056 = true`).
 
+Todo GND do circuito vai no **OUT−** do TP4056 (que é o GND da XIAO), nunca direto
+no B− da bateria: ligar no B− passa por fora da proteção.
+
 ### Laser e LED IR
 
 ```
-3V3 ──► laser (+)                 BAT+ ──► 22 Ω ──► LED IR (ânodo)
+3V3 ──► laser (+)                 BAT+ ──► 22 Ω (1/4 W) ──► LED IR (ânodo)
         laser (−) ──► coletor              LED IR (cátodo) ──► coletor
-                      S8050                                    S8050
+                      SS8050                                   SS8050
 D9 ──► 1 kΩ ──► base                D3 ──► 1 kΩ ──► base
        100 kΩ da base ao GND               100 kΩ da base ao GND
         emissor ──► GND                     emissor ──► GND
