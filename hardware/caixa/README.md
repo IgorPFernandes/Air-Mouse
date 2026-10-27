@@ -16,6 +16,7 @@ discreto no canto traseiro de baixo para a argola do chaveiro.
 
 | Arquivo | O que é |
 |---|---|
+| [visualizador.html](visualizador.html) | Visualizador 3D interativo: gire, afaste as camadas e destaque cada peça. Baixe e abra no navegador |
 | [air_mouse_case.scad](air_mouse_case.scad) | Modelo paramétrico (OpenSCAD) |
 | [stl/air_mouse_base.stl](stl/air_mouse_base.stl) | Base: paredes, fundo, furos do laser e do LED IR, USB-C, rasgo da argola |
 | [stl/air_mouse_tampa.stl](stl/air_mouse_tampa.stl) | Tampa: furos dos botões, janela do receptor IR, LED. Já vem virada para imprimir |

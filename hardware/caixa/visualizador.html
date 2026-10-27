@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visualizador da caixa</title>
+<style>
+:root{--text-primary:#1f1e1d;--text-secondary:#5f5e5a;--text-muted:#888780;--border-strong:#b4b2a9;--surface-1:#f1efe8;--page:#faf9f5;--radius:8px}
+@media (prefers-color-scheme: dark){:root{--text-primary:#f1efe8;--text-secondary:#b4b2a9;--text-muted:#888780;--border-strong:#5f5e5a;--surface-1:#2c2c2a;--page:#1f1e1d}}
+body{margin:0;background:var(--page);color:var(--text-primary);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+main{max-width:860px;margin:0 auto;padding:24px 16px 40px}
+h1{font-size:22px;font-weight:500;margin:0 0 4px}
+p{margin:0 0 14px;color:var(--text-secondary);font-size:14px}
+.nota{font-size:12px;color:var(--text-muted);margin-top:16px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.am-b{font-size:12px;padding:3px 9px;border:0.5px solid var(--border-strong);border-radius:var(--radius);background:transparent;color:var(--text-primary);cursor:pointer}
+.am-b:hover{background:var(--surface-1)}
+.am-li{display:flex;align-items:center;text-align:left;font:inherit;font-size:12px;color:var(--text-secondary);background:transparent;border:0;padding:3px 4px;border-radius:var(--radius);cursor:pointer}
+.am-li:hover{background:var(--surface-1)}
+.am-li.on{color:var(--text-primary);font-weight:500;background:var(--surface-1)}
+.am-sw{display:inline-block;flex:none;width:10px;height:10px;border-radius:2px;margin-right:7px}
+</style>
+</head>
+<body>
+<main>
+<h1>Air Mouse · caixa do chaveiro</h1>
+<p>Arraste para girar. A barra <em>Explodir</em> afasta as camadas na ordem de montagem; clique numa peça da legenda para ver só ela.</p>
+<h2 class="sr-only">Modelo 3D interativo do Air Mouse em formato de chaveiro, 42 por 37,2 por 24,5 milímetros: uma barra afasta as camadas de peças da caixa, e clicar numa peça da legenda destaca só ela.</h2>
+<div style="position:relative;width:100%">
+  <canvas id="am-c" style="display:block;width:100%;height:440px;touch-action:none;cursor:grab"></canvas>
+  <div id="am-msg" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text-secondary)">Carregando o modelo 3D…</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:10px 0 4px;font-size:13px;color:var(--text-secondary)">
+  <label style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px">Explodir <input id="am-exp" type="range" min="0" max="100" value="35" style="flex:1"></label>
+  <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input id="am-case" type="checkbox" checked> Caixa</label>
+  <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input id="am-rot" type="checkbox"> Girar</label>
+  <span style="display:flex;gap:6px;flex-wrap:wrap">
+    <button class="am-b" data-v="iso">3/4</button><button class="am-b" data-v="tras">Trás</button><button class="am-b" data-v="lado">Lado</button><button class="am-b" data-v="frente">Frente</button><button class="am-b" data-v="cima">Cima</button>
+  </span>
+</div>
+<div id="am-leg" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:2px 10px;margin-top:8px"></div>
+<p class="nota">Medidas do <code>air_mouse_case.scad</code> (caixa de 42 × 37,2 × 24,5 mm). As peças eletrônicas são aproximadas por blocos; a bateria tem medida estimada por foto.</p>
+</main>
+<script>
+(function(){
+var C={cx:18.5,cy:20,cz:4};
+var CS=0xD3D1C7,HOLE=0x444441;
+var LEG=[
+ ["caixa","Caixa (base e tampa)",CS],
+ ["bateria","Bateria LiPo 30×30×5 (estimada)",0xB4B2A9],
+ ["tp4056","TP4056 colado na bateria",0x2F6DB5],
+ ["laser","Laser 650 nm, 6 mm",0xC4473A],
+ ["ledir","LED IR TSAL4400, 3 mm",0x3C3489],
+ ["driver","Transistores SS8050",0x3B6D11],
+ ["bandeja","Bandeja impressa",0xCFCCC2],
+ ["mpu","MPU6050 (GY-521)",0x1D9E75],
+ ["xiao","XIAO ESP32-C6",0x7F77DD],
+ ["botoes","Botões 6×6×7 mm",0x5F5E5A],
+ ["receptor","Receptor IR TSOP38238",0x4A4A47],
+ ["ledrgb","LED RGB 3 mm",0xF1EFE8],
+ ["argola","Argola de 25 mm",0x9A9890]
+];
+var sel=null,legEls={},api=null;
+var leg=document.getElementById('am-leg');
+LEG.forEach(function(l){
+ var b=document.createElement('button');b.type='button';b.className='am-li';
+ b.innerHTML='<span class="am-sw" style="background:#'+l[2].toString(16).padStart(6,'0')+'"></span>'+l[1];
+ b.addEventListener('click',function(){sel=(sel===l[0])?null:l[0];Object.keys(legEls).forEach(function(k){legEls[k].classList.toggle('on',k===sel);});if(api)api.destacar();});
+ legEls[l[0]]=b;leg.appendChild(b);
+});
+function load(src){return new Promise(function(ok,err){var s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=err;document.head.appendChild(s);});}
+(window.THREE?Promise.resolve():load('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js')).then(init).catch(function(){document.getElementById('am-msg').textContent='Não foi possível carregar o 3D.';});
+function init(){
+ var T=THREE,canvas=document.getElementById('am-c');
+ var renderer=new T.WebGLRenderer({canvas:canvas,antialias:true,alpha:true});
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+ renderer.localClippingEnabled=true;
+ var scene=new T.Scene(),cam=new T.PerspectiveCamera(30,1,1,2000);
+ scene.add(new T.HemisphereLight(0xffffff,0x8a8880,0.8));
+ var d1=new T.DirectionalLight(0xffffff,0.7);d1.position.set(60,120,90);scene.add(d1);
+ var d2=new T.DirectionalLight(0xffffff,0.3);d2.position.set(-80,40,-60);scene.add(d2);
+ var parts=[];
+ function mat(c,o){var m=new T.MeshStandardMaterial({color:c,roughness:0.65,metalness:0.05});if(o!==undefined){m.transparent=true;m.opacity=o;m.depthWrite=false;}return m;}
+ function add(mesh,layer,key){var g=new T.Group();g.add(mesh);scene.add(g);var ms=[];mesh.traverse(function(n){if(n.material)ms.push({m:n.material,o:n.material.opacity,t:n.material.transparent,dw:n.material.depthWrite});});parts.push({g:g,layer:layer,key:key,ms:ms});return g;}
+ function box(k,L,c,x0,x1,y0,y1,z0,z1,o){var m=new T.Mesh(new T.BoxGeometry(x1-x0,z1-z0,y1-y0),mat(c,o));m.position.set((x0+x1)/2-C.cx,(z0+z1)/2-C.cz,-((y0+y1)/2-C.cy));return add(m,L,k);}
+ function cylY(k,L,c,x,z,y0,len,d,o){var m=new T.Mesh(new T.CylinderGeometry(d/2,d/2,len,32),mat(c,o));m.rotation.x=Math.PI/2;m.position.set(x-C.cx,z-C.cz,-((y0+len/2)-C.cy));return add(m,L,k);}
+ function cylX(k,L,c,y,z,x0,len,d,o){var m=new T.Mesh(new T.CylinderGeometry(d/2,d/2,len,24),mat(c,o));m.rotation.z=Math.PI/2;m.position.set(x0+len/2-C.cx,z-C.cz,-(y-C.cy));return add(m,L,k);}
+ function cylZ(k,L,c,x,y,z0,len,d,o){var m=new T.Mesh(new T.CylinderGeometry(d/2,d/2,len,32),mat(c,o));m.position.set(x-C.cx,z0+len/2-C.cz,-(y-C.cy));return add(m,L,k);}
+ var W=42,LL=37.2,H=24.5,R=4,X0=-2.5,Y0=-2.5,Z0=-2,SEAM=20.5,STEP=11;
+ function rr(w,l,r){var s=new T.Shape(),a=-w/2,b=w/2,c=-l/2,d=l/2;s.moveTo(a+r,c);s.lineTo(b-r,c);s.absarc(b-r,c+r,r,-Math.PI/2,0,false);s.lineTo(b,d-r);s.absarc(b-r,d-r,r,0,Math.PI/2,false);s.lineTo(a+r,d);s.absarc(a+r,d-r,r,Math.PI/2,Math.PI,false);s.lineTo(a,c+r);s.absarc(a+r,c+r,r,Math.PI,1.5*Math.PI,false);return s;}
+ var sg=new T.ExtrudeGeometry(rr(W-2*R,LL-2*R,0.02),{depth:H-2*R,bevelEnabled:true,bevelThickness:R,bevelSize:R,bevelSegments:10,curveSegments:10});
+ var baseClip=new T.Plane(new T.Vector3(0,-1,0),SEAM-C.cz),lidClip=new T.Plane(new T.Vector3(0,1,0),-(SEAM-C.cz));
+ function shell(clip,L){var mt=mat(CS,0.32);mt.clippingPlanes=[clip];mt.side=T.DoubleSide;var m=new T.Mesh(sg,mt);m.rotation.x=-Math.PI/2;m.position.set(X0+W/2-C.cx,Z0+R-C.cz,-(Y0+LL/2-C.cy));return add(m,L,'caixa');}
+ shell(baseClip,0);shell(lidClip,5);
+ box('caixa',0,CS,0,1.2,10.6,32.2,9.8,11,0.5);
+ box('caixa',0,CS,35.8,37,10.6,32.2,9.8,11,0.5);
+ [3,5.5,8,10.5,13,15.5].forEach(function(z){box('caixa',0,0x888780,-2.58,-2.48,3,29.2,z-0.5,z+0.5,0.9);box('caixa',0,0x888780,39.48,39.58,3,29.2,z-0.5,z+0.5,0.9);});
+ cylY('caixa',0,HOLE,22.5,8.5,-2.62,0.15,6.6);
+ cylY('caixa',0,HOLE,28.6,8.5,-2.62,0.15,3.3);
+ box('caixa',0,0xB4B2A9,20.3,32.9,34.68,34.76,11.3,18.3,0.8);
+ box('caixa',0,HOLE,21.9,31.3,34.7,34.82,13,16.6);
+ box('caixa',0,HOLE,32.8,36.2,34.7,34.82,-1.6,6,0.85);
+ box('caixa',0,HOLE,32.8,36.2,24.7,34.3,-2.06,-1.98,0.85);
+ box('caixa',0,CS,32,37,23.9,24.7,0,6.8,0.45);
+ box('caixa',0,CS,32,32.8,23.9,32.2,0,6.8,0.45);
+ box('caixa',0,CS,36.2,37,23.9,32.2,0,6.8,0.45);
+ box('caixa',0,CS,32,37,23.9,32.2,6,6.8,0.45);
+ cylX('caixa',0,0xB4B2A9,31.8,0.4,32.8,3.4,3.5);
+ (function(){var rg=new T.Mesh(new T.TorusGeometry(12.5,1,16,120),new T.MeshStandardMaterial({color:0x9A9890,roughness:0.35,metalness:0.6}));rg.rotation.y=Math.PI/2;rg.position.set(34.5-C.cx,-7.2-C.cz,-(37.74-C.cy));add(rg,0,'argola');})();
+ box('bateria',0,0xB4B2A9,1,31,2,32,0,5);
+ box('tp4056',1,0x2F6DB5,1,18.5,4,32,5.5,7.1);
+ box('tp4056',1,0xD3D1C7,5.3,14.2,24.6,32,7.1,10.3);
+ box('tp4056',1,0x2C2C2A,7,11,13,17,7.1,8.1);
+ cylY('laser',1,0xC4473A,22.5,8.5,0,10.5,6);
+ cylY('ledir',1,0x3C3489,28.6,8.5,0,5.3,3);
+ box('driver',1,0x3B6D11,19,30.5,14,27,5.5,7.1);
+ box('driver',1,0x2C2C2A,21,24.8,17,21.6,7.1,10.8);
+ box('driver',1,0x2C2C2A,26,29.8,17,21.6,7.1,10.8);
+ [[0.2,18.9,10.6,32],[18.9,20.4,13.6,32],[26.1,36.8,10.6,13.6],[32.8,36.8,13.6,32],[20.4,32.8,28.7,32]].forEach(function(r){box('bandeja',2,0xCFCCC2,r[0],r[1],r[2],r[3],11,12);});
+ box('bandeja',2,0xCFCCC2,16.6,17.4,10.6,32,12,13);
+ box('bandeja',2,0xCFCCC2,35.8,36.6,10.6,32,12,13);
+ box('mpu',3,0x1D9E75,0.3,16.3,10.9,31.9,12,13.6);
+ box('mpu',3,0x2C2C2A,6,10,20.2,24.2,13.6,14.6);
+ box('xiao',3,0x7F77DD,17.7,35.5,11.2,32.2,12,13.2);
+ box('xiao',3,0x2C2C2A,23.4,28.4,16.2,21.2,13.2,14.2);
+ box('xiao',3,0xD3D1C7,22.15,31.05,24.8,32.2,13.2,16.4);
+ [[18.5,4.2],[18.5,14],[9,21.5],[28,21.5]].forEach(function(b){box('botoes',4,0x5F5E5A,b[0]-3,b[0]+3,b[1]-3,b[1]+3,17,20.5);cylZ('botoes',4,0x888780,b[0],b[1],20.5,3.5,3.5);});
+ box('receptor',4,0x4A4A47,3.5,8.5,1.525,8.475,15.7,20.5);
+ cylZ('receptor',4,0x888780,6,4.2,20.5,0.25,3.2);
+ cylZ('ledrgb',4,0xF1EFE8,31.6,6,16.7,5.3,3);
+ var theta=0.8,phi=1.12,radius=200,target=new T.Vector3(0,0,0),expT=0.35,narrow=false,girar=false;
+ function render(){renderer.render(scene,cam);}
+ function updateCam(){cam.position.set(target.x+radius*Math.sin(phi)*Math.sin(theta),target.y+radius*Math.cos(phi),target.z+radius*Math.sin(phi)*Math.cos(theta));cam.lookAt(target);render();}
+ function fit(){radius=(148+85*expT)*(narrow?1.45:1);}
+ function setExplode(t){expT=t;parts.forEach(function(p){p.g.position.y=p.layer*STEP*t;});lidClip.constant=-(SEAM-C.cz+5*STEP*t);target.y=STEP*2.5*t;fit();updateCam();}
+ function resize(){var w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();narrow=w/h<1;fit();updateCam();}
+ var caixaVisivel=true;
+ function destacar(){parts.forEach(function(p){var apaga=sel&&p.key!==sel;p.g.visible=(p.key!=='caixa'||caixaVisivel||sel==='caixa');p.ms.forEach(function(s){if(apaga){s.m.transparent=true;s.m.opacity=Math.min(s.o,0.06);s.m.depthWrite=false;}else{s.m.transparent=s.t;s.m.opacity=s.o;s.m.depthWrite=s.dw;}s.m.needsUpdate=true;});});render();}
+ api={destacar:destacar};
+ var drag=null;
+ canvas.addEventListener('pointerdown',function(e){drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';});
+ canvas.addEventListener('pointermove',function(e){if(!drag)return;theta-=(e.clientX-drag.x)*0.01;phi=Math.min(3.1,Math.max(0.03,phi-(e.clientY-drag.y)*0.01));drag={x:e.clientX,y:e.clientY};updateCam();});
+ function end(){drag=null;canvas.style.cursor='grab';}
+ canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
+ var V={iso:[0.8,1.12],tras:[2.4,1.2],lado:[Math.PI/2,1.45],frente:[0,1.35],cima:[0,0.03]};
+ document.querySelectorAll('.am-b[data-v]').forEach(function(b){b.addEventListener('click',function(){var v=V[b.getAttribute('data-v')];theta=v[0];phi=v[1];updateCam();});});
+ document.getElementById('am-exp').addEventListener('input',function(e){setExplode(e.target.value/100);});
+ document.getElementById('am-case').addEventListener('change',function(e){caixaVisivel=e.target.checked;destacar();});
+ function loop(){if(!girar)return;if(!drag){theta+=0.006;updateCam();}requestAnimationFrame(loop);}
+ document.getElementById('am-rot').addEventListener('change',function(e){girar=e.target.checked;if(girar)requestAnimationFrame(loop);});
+ document.getElementById('am-msg').style.display='none';
+ new ResizeObserver(resize).observe(canvas);
+ setExplode(0.35);resize();
+}
+})();
+</script>
+</body>
+</html>
